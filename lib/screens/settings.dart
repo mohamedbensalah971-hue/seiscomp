@@ -14,7 +14,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.backgroundCard,
-          title: const Text('Reset All Data?', style: TextStyle(color: Colors.white)),
+          title: Text('Reset All Data?', style: TextStyle(color: AppColors.textPrimary)),
           content: Text(
             'This action will permanently delete all player profiles, settings, and session metrics. This cannot be undone!',
             style: TextStyle(color: AppColors.textSecondary),
@@ -109,9 +109,9 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         children: [
           _buildLanguageTile(appState, 'en', '🇬🇧 English'),
-          const Divider(color: Colors.white10, height: 1),
+          Divider(color: AppColors.textMuted.withValues(alpha: 0.2), height: 1),
           _buildLanguageTile(appState, 'fr', '🇫🇷 Français'),
-          const Divider(color: Colors.white10, height: 1),
+          Divider(color: AppColors.textMuted.withValues(alpha: 0.2), height: 1),
           _buildLanguageTile(appState, 'ar', '🇸🇦 العربية'),
         ],
       ),
@@ -121,7 +121,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildLanguageTile(AppState appState, String code, String label) {
     bool isSelected = appState.language == code;
     return ListTile(
-      title: Text(label, style: const TextStyle(color: Colors.white)),
+      title: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
       trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.secondary) : null,
       onTap: () => appState.setLanguage(code),
     );
@@ -135,13 +135,13 @@ class SettingsScreen extends StatelessWidget {
           // Music Slider
           Row(
             children: [
-              const Icon(Icons.music_note, color: Colors.white54),
+              const Icon(Icons.music_note, color: AppColors.textMuted),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.get('music_vol', lang), style: const TextStyle(color: Colors.white)),
+                    Text(AppLocalizations.get('music_vol', lang), style: const TextStyle(color: AppColors.textPrimary)),
                     Slider(
                       value: appState.musicVolume,
                       onChanged: (val) {
@@ -157,13 +157,13 @@ class SettingsScreen extends StatelessWidget {
           // SFX Slider
           Row(
             children: [
-              const Icon(Icons.volume_up, color: Colors.white54),
+              const Icon(Icons.volume_up, color: AppColors.textMuted),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.get('sfx_vol', lang), style: const TextStyle(color: Colors.white)),
+                    Text(AppLocalizations.get('sfx_vol', lang), style: const TextStyle(color: AppColors.textPrimary)),
                     Slider(
                       value: appState.sfxVolume,
                       onChanged: (val) {
@@ -178,7 +178,7 @@ class SettingsScreen extends StatelessWidget {
 
           // Voice Guidelines
           SwitchListTile(
-            title: Text(AppLocalizations.get('voice_instr', lang), style: const TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.get('voice_instr', lang), style: const TextStyle(color: AppColors.textPrimary)),
             value: appState.voiceInstructions,
             onChanged: (val) => appState.setVoiceInstructions(val),
             contentPadding: EdgeInsets.zero,
@@ -195,37 +195,37 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // Reduce Motion
           SwitchListTile(
-            title: Text(AppLocalizations.get('reduce_motion', lang), style: const TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.get('reduce_motion', lang), style: const TextStyle(color: AppColors.textPrimary)),
             subtitle: Text('Simplifies slide transitions and particle animations', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             value: appState.reduceMotion,
             onChanged: (val) => appState.setReduceMotion(val),
             contentPadding: EdgeInsets.zero,
           ),
-          const Divider(color: Colors.white10),
+          Divider(color: AppColors.textMuted.withValues(alpha: 0.2)),
 
           // Reduce Distractors
           SwitchListTile(
-            title: Text(AppLocalizations.get('reduce_distractors', lang), style: const TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.get('reduce_distractors', lang), style: const TextStyle(color: AppColors.textPrimary)),
             subtitle: Text('Reduces active level distractors to help focus', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             value: appState.reduceDistractors,
             onChanged: (val) => appState.setReduceDistractors(val),
             contentPadding: EdgeInsets.zero,
           ),
-          const Divider(color: Colors.white10),
+          Divider(color: AppColors.textMuted.withValues(alpha: 0.2)),
 
           // Colorblind Mode
           SwitchListTile(
-            title: Text(AppLocalizations.get('colorblind_mode', lang), style: const TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.get('colorblind_mode', lang), style: const TextStyle(color: AppColors.textPrimary)),
             subtitle: Text('Uses distinct textures and shapes in puzzle levels', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             value: appState.colorblindMode,
             onChanged: (val) => appState.setColorblindMode(val),
             contentPadding: EdgeInsets.zero,
           ),
-          const Divider(color: Colors.white10),
+          Divider(color: AppColors.textMuted.withValues(alpha: 0.2)),
 
           // Larger Text
           SwitchListTile(
-            title: Text(AppLocalizations.get('larger_text', lang), style: const TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.get('larger_text', lang), style: const TextStyle(color: AppColors.textPrimary)),
             subtitle: Text('Increases display readability on gameplay text UI', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             value: appState.largerText,
             onChanged: (val) => appState.setLargerText(val),
@@ -260,7 +260,7 @@ class SettingsScreen extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
             ),
           if (appState.selectedProfile != null)
-            const Divider(color: Colors.white10),
+            Divider(color: AppColors.textMuted.withValues(alpha: 0.2)),
 
           // Reset everything
           ListTile(

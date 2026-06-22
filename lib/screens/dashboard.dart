@@ -19,7 +19,7 @@ class DashboardScreen extends StatelessWidget {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-        body: const Center(child: Text('No active profile', style: TextStyle(color: Colors.white))),
+        body: Center(child: Text('No active profile', style: TextStyle(color: AppColors.textPrimary))),
       );
     }
 
@@ -183,7 +183,7 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -228,7 +228,7 @@ class DashboardScreen extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (value) => FlLine(
-              color: Colors.white.withOpacity(0.05),
+              color: AppColors.textMuted.withOpacity(0.15),
               strokeWidth: 1,
             ),
           ),
@@ -310,7 +310,7 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Text(
                   'Current Level Recommendation',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -348,7 +348,7 @@ class DashboardScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.backgroundCard,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.03)),
+            border: Border.all(color: AppColors.textMuted.withOpacity(0.15)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -368,7 +368,7 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                       Text(
                         AppLocalizations.get('${res.missionId}_title', lang),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                       Text(
                         'Time: ${res.completionTimeSeconds.round()}s  •  Wrong: ${res.wrongClicks + res.distractorClicks}',

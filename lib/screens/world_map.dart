@@ -104,7 +104,7 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                       ),
                       child: Text(
                         AppLocalizations.get(sk, lang),
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                     );
                   }).toList(),
@@ -240,9 +240,9 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.backgroundSurface,
-        border: Border(bottom: BorderSide(color: Colors.white10)),
+        border: Border(bottom: BorderSide(color: AppColors.textMuted.withValues(alpha: 0.15))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -377,7 +377,7 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                       : Colors.white.withValues(alpha: 0.02),
                   borderColor: isUnlocked 
                       ? r.color.withValues(alpha: 0.4) 
-                      : Colors.white10,
+                      : AppColors.textMuted.withValues(alpha: 0.2),
                   child: Row(
                     children: [
                       // Circular level icon
@@ -460,7 +460,7 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
               Container(
                 height: 40,
                 width: 3,
-                color: isUnlocked ? r.color.withValues(alpha: 0.4) : Colors.white12,
+                color: isUnlocked ? r.color.withValues(alpha: 0.4) : AppColors.textMuted.withValues(alpha: 0.25),
               ),
           ],
         );
@@ -506,8 +506,8 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
               bool canAfford = child.gems >= item.cost;
 
               return GlassmorphicContainer(
-                color: isEquipped ? AppColors.primary.withValues(alpha: 0.08) : const Color(0x1F222147),
-                borderColor: isEquipped ? AppColors.primaryLight : const Color(0x24FFFFFF),
+                color: isEquipped ? AppColors.primary.withValues(alpha: 0.08) : AppColors.backgroundCard,
+                borderColor: isEquipped ? AppColors.primaryLight : AppColors.textMuted.withValues(alpha: 0.2),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -521,7 +521,7 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                     // Item details
                     Text(
                       item.name,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
 

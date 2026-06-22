@@ -332,12 +332,12 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> with SingleTi
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: Colors.white.withValues(alpha: 0.05),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                color: AppColors.backgroundCard,
+                                border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.25)),
                               ),
                               child: Text(
                                 label,
-                                style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 18, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -445,10 +445,10 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> with SingleTi
                             child: GlassmorphicContainer(
                               color: isSelected 
                                   ? AppColors.primary.withValues(alpha: 0.15) 
-                                  : const Color(0x1F222147),
+                                  : AppColors.backgroundCard,
                               borderColor: isSelected 
                                   ? AppColors.primaryLight 
-                                  : const Color(0x24FFFFFF),
+                                  : AppColors.textMuted.withValues(alpha: 0.2),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [

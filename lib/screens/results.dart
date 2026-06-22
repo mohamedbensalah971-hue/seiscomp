@@ -107,7 +107,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                         style: AppTextStyles.displayLarge(context).copyWith(
                           color: isCompleted
                               ? AppColors.accentYellow
-                              : Colors.white,
+                              : AppColors.textPrimary,
                           shadows: isCompleted
                               ? [
                                   const Shadow(
@@ -157,7 +157,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                       size: 70,
                                       color: isFilled
                                           ? AppColors.accentYellow
-                                          : Colors.white12,
+                                          : AppColors.textMuted.withValues(alpha: 0.25),
                                       shadows: isFilled
                                           ? [
                                               const Shadow(
@@ -197,7 +197,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 20),
-                              const Divider(color: Colors.white10),
+                              Divider(color: AppColors.textMuted.withValues(alpha: 0.2)),
                               const SizedBox(height: 12),
 
                               // Metrics
@@ -256,7 +256,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                       Container(
                                         width: 1,
                                         height: 32,
-                                        color: Colors.white10,
+                                        color: AppColors.textMuted.withValues(alpha: 0.2),
                                       ),
                                       _buildRewardChip(Icons.diamond_rounded,
                                           '+${res.gemsEarned}', AppColors.secondary),
@@ -296,7 +296,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                   Text(
                                     AppLocalizations.get('suggestion', lang),
                                     style: GoogleFonts.outfit(
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -420,7 +420,7 @@ class _ResultsScreenState extends State<ResultsScreen>
           ),
           Text(value,
               style: GoogleFonts.nunito(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               )),
