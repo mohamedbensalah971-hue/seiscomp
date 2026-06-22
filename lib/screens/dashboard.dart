@@ -287,7 +287,7 @@ class DashboardScreen extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (value) => FlLine(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppColors.textMuted.withValues(alpha: 0.15),
               strokeWidth: 1,
             ),
           ),
@@ -482,7 +482,9 @@ class DashboardScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.backgroundCard,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.03)),
+            border: Border.all(
+              color: AppColors.textMuted.withValues(alpha: 0.15),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -7,7 +7,21 @@ import '../theme.dart';
 import '../models.dart';
 import '../localization.dart';
 import '../widgets/puzzle_room_scenes.dart';
+import '../services/game_feedback_service.dart';
 import 'results.dart';
+
+class _FloatingFeedback {
+  final String text;
+  final Offset position;
+  final Color color;
+  final DateTime created;
+
+  _FloatingFeedback({
+    required this.text,
+    required this.position,
+    required this.color,
+  }) : created = DateTime.now();
+}
 
 class PuzzleGameScreen extends StatefulWidget {
   final String missionId;
@@ -53,6 +67,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   // Animation Controllers
   late AnimationController _timerController;
   late AnimationController _distractorMotionController;
+  late AnimationController _itemBobController;
   late AnimationController _pulseController;
   late AnimationController _lightAnimController;
   late AnimationController _doorAnimController;
@@ -62,6 +77,14 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   // Custom Particle bursts
   final List<LevelParticle> _particles = [];
   Timer? _particleTimer;
+  Timer? _floatTimer;
+
+  // Wrong-tap feedback
+  late AnimationController _flashController;
+  late AnimationController _shakeController;
+  String? _shakingObjectId;
+  final List<_FloatingFeedback> _floatingFeedbacks = [];
+  double _screenFlash = 0.0;
 
   // AI adaptation constraints
   late DifficultyParams _difficulty;
@@ -105,11 +128,19 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
       duration: Duration(
         milliseconds: motionScale == 0
             ? 999999
-            : (2000 / (distractorSpeed + 0.1)).round(),
+            : (1400 / (distractorSpeed + 0.1)).round(),
       ),
     );
     if (motionScale > 0) {
       _distractorMotionController.repeat(reverse: true);
+    }
+
+    _itemBobController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: motionScale == 0 ? 999999 : 2600),
+    );
+    if (motionScale > 0) {
+      _itemBobController.repeat(reverse: true);
     }
 
     // Glowing animations
@@ -139,6 +170,29 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
       curve: Curves.easeOutBack,
     );
 
+    _flashController =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 350),
+        )..addListener(() {
+          if (mounted) setState(() => _screenFlash = _flashController.value);
+        });
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+
+    // Voice: read mission goal when level starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = Provider.of<AppState>(context, listen: false);
+      GameFeedbackService.instance.speakGoal(
+        widget.missionId,
+        appState.language,
+        enabled: appState.voiceInstructions,
+      );
+    });
+
     _startAdaptiveMission();
   }
 
@@ -163,6 +217,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   void _beginMission() {
     _startTime = DateTime.now();
     _timerController.forward(from: 0);
+    // Auto hint check after the agent-specified delay.
     Future.delayed(Duration(seconds: _difficulty.hintDelaySeconds.round()), () {
       if (mounted && !_isCompleted && _events.isEmpty) {
         _triggerAutoHint();
@@ -175,6 +230,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
       _hintActive = true;
       _hintText = _getHintString();
     });
+    final appState = Provider.of<AppState>(context, listen: false);
+    GameFeedbackService.instance.speakHint(
+      widget.missionId,
+      appState.language,
+      enabled: appState.voiceInstructions,
+    );
   }
 
   String _getHintString() {
@@ -190,12 +251,134 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   void dispose() {
     _timerController.dispose();
     _distractorMotionController.dispose();
+    _itemBobController.dispose();
     _pulseController.dispose();
     _lightAnimController.dispose();
     _doorAnimController.dispose();
     _missionStartTimer?.cancel();
+    _flashController.dispose();
+    _shakeController.dispose();
     _particleTimer?.cancel();
+    _floatTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleWrongTap(
+    String objectId,
+    Offset globalPos, {
+    required bool isDistractor,
+  }) {
+    if (_isCompleted || _isPaused) return;
+
+    _recordEvent(
+      isDistractor
+          ? GameplayEventType.tapDistractor
+          : GameplayEventType.tapWrong,
+      objectId,
+      globalPos,
+    );
+
+    final appState = Provider.of<AppState>(context, listen: false);
+    final lang = appState.language;
+    final reduceMotion = appState.reduceMotion;
+
+    // Red / orange sparkle burst at tap location
+    _triggerWrongBurst(globalPos, isDistractor: isDistractor);
+
+    // Screen red flash
+    if (!reduceMotion) {
+      _flashController.forward(from: 0).then((_) {
+        if (mounted) _flashController.reverse();
+      });
+    }
+
+    // Shake the tapped object
+    if (!reduceMotion) {
+      setState(() => _shakingObjectId = objectId);
+      _shakeController.forward(from: 0);
+    }
+
+    // Floating label near tap
+    final label = isDistractor
+        ? GameFeedbackService.instance.distractorLabel(lang)
+        : GameFeedbackService.instance.randomWrongLabel(lang);
+    setState(() {
+      _floatingFeedbacks.add(
+        _FloatingFeedback(
+          text: label,
+          position: globalPos,
+          color: isDistractor ? AppColors.accentPink : AppColors.accentRed,
+        ),
+      );
+    });
+    _startFloatTimer();
+
+    // Haptics + supportive voice (never punitive)
+    if (isDistractor) {
+      GameFeedbackService.instance.hapticDistractor();
+    } else {
+      GameFeedbackService.instance.hapticWrong();
+    }
+    GameFeedbackService.instance.speakWrong(
+      lang: lang,
+      voiceEnabled: appState.voiceInstructions,
+      isDistractor: isDistractor,
+      wrongCount: _wrongClicks + _distractorClicks,
+    );
+  }
+
+  void _startFloatTimer() {
+    _floatTimer?.cancel();
+    _floatTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) return;
+      final now = DateTime.now();
+      _floatingFeedbacks.removeWhere(
+        (f) => now.difference(f.created).inMilliseconds > 1200,
+      );
+      setState(() {});
+      if (_floatingFeedbacks.isEmpty) timer.cancel();
+    });
+  }
+
+  void _triggerWrongBurst(Offset origin, {required bool isDistractor}) {
+    final random = math.Random();
+    final count = isDistractor ? 45 : 35;
+    final colors = isDistractor
+        ? [AppColors.accentPink, AppColors.accentPurple, AppColors.accentYellow]
+        : [AppColors.accentRed, const Color(0xFFFF6B6B), AppColors.accentPink];
+
+    setState(() {
+      for (int i = 0; i < count; i++) {
+        double angle = random.nextDouble() * 2 * math.pi;
+        double speed = 2.0 + random.nextDouble() * 7.0;
+        _particles.add(
+          LevelParticle(
+            x: origin.dx,
+            y: origin.dy,
+            vx: math.cos(angle) * speed,
+            vy: math.sin(angle) * speed - 1.5,
+            color: colors[random.nextInt(colors.length)],
+            radius: 2.0 + random.nextDouble() * 5.0,
+            opacity: 1.0,
+          ),
+        );
+      }
+    });
+    _runParticleLoop();
+  }
+
+  void _runParticleLoop() {
+    _particleTimer?.cancel();
+    _particleTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!mounted) return;
+      setState(() {
+        for (var p in _particles) {
+          p.update();
+        }
+        _particles.removeWhere((p) => p.opacity <= 0.05);
+      });
+      if (_particles.isEmpty) timer.cancel();
+    });
   }
 
   void _recordEvent(GameplayEventType type, String objectId, Offset pos) {
@@ -252,23 +435,19 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         );
       }
     });
-
-    _particleTimer?.cancel();
-    _particleTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!mounted) return;
-      setState(() {
-        for (var p in _particles) {
-          p.update();
-        }
-        _particles.removeWhere((p) => p.opacity <= 0.05);
-      });
-      if (_particles.isEmpty) {
-        timer.cancel();
-      }
-    });
+    _runParticleLoop();
   }
 
   void _handleCorrectClick(String objectId, Offset position) {
+    if (_isCompleted || _isPaused) return;
+
+    final appState = Provider.of<AppState>(context, listen: false);
+    GameFeedbackService.instance.hapticCorrect();
+    GameFeedbackService.instance.speakCorrect(
+      appState.language,
+      voiceEnabled: appState.voiceInstructions,
+    );
+
     _recordEvent(GameplayEventType.tapCorrect, objectId, position);
     _triggerSparkBurst(position);
 
@@ -382,6 +561,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     // Save result to store and update AI adaptation
     await appState.submitSession(result);
 
+    GameFeedbackService.instance.speakMissionComplete(
+      appState.language,
+      voiceEnabled: appState.voiceInstructions,
+    );
+
     // Proceed to Results screen
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
@@ -444,6 +628,44 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     _timerController.forward();
   }
 
+  List<Widget> _buildFloatingLabels() {
+    final now = DateTime.now();
+    return _floatingFeedbacks.map((f) {
+      final age = now.difference(f.created).inMilliseconds;
+      final t = (age / 1200).clamp(0.0, 1.0);
+      final opacity = 1.0 - t;
+      final dy = -40.0 * t;
+      return Positioned(
+        left: f.position.dx - 60,
+        top: f.position.dy + dy - 20,
+        child: Opacity(
+          opacity: opacity,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: f.color.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: f.color.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Text(
+              f.text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -464,15 +686,32 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                 ),
               ),
 
-              // Particles must not intercept pointer events (web + mobile)
+              // Particles + floating wrong-tap labels
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: LevelSparkPainter(_particles),
-                    size: Size.infinite,
+                  child: Stack(
+                    children: [
+                      CustomPaint(
+                        painter: LevelSparkPainter(_particles),
+                        size: Size.infinite,
+                      ),
+                      ..._buildFloatingLabels(),
+                    ],
                   ),
                 ),
               ),
+
+              // Red flash on wrong tap
+              if (_screenFlash > 0)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      color: AppColors.accentRed.withValues(
+                        alpha: 0.18 * _screenFlash,
+                      ),
+                    ),
+                  ),
+                ),
 
               // Top HUD HUD bar
               Positioned(
@@ -778,8 +1017,10 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
               // Restart
               OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white30),
+                  foregroundColor: AppColors.textPrimary,
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -837,14 +1078,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (!_isCompleted && !_isPaused) {
-                _recordEvent(
-                  GameplayEventType.tapWrong,
-                  'empty_space',
-                  Offset.zero,
-                );
-              }
+            onTapDown: (d) {
+              _handleWrongTap(
+                'empty_space',
+                d.globalPosition,
+                isDistractor: false,
+              );
             },
             child: const SizedBox.expand(),
           ),
@@ -980,8 +1219,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                   id: 'lighter',
                   emoji: '🔥',
                   label: 'Lighter',
+                  isWrongChoice: true,
                   onTap: (pos) =>
-                      _recordEvent(GameplayEventType.tapWrong, 'lighter', pos),
+                      _handleWrongTap('lighter', pos, isDistractor: false),
                 ),
               ),
 
@@ -993,8 +1233,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                   id: 'sun_icon',
                   emoji: '☀️',
                   label: 'Sun',
+                  isWrongChoice: true,
                   onTap: (pos) =>
-                      _recordEvent(GameplayEventType.tapWrong, 'sun_icon', pos),
+                      _handleWrongTap('sun_icon', pos, isDistractor: false),
                 ),
               ),
 
@@ -1054,11 +1295,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                     if (_batterySelected) {
                       _handleCorrectClick('cable', pos);
                     } else {
-                      _recordEvent(
-                        GameplayEventType.tapWrong,
-                        'cable_early',
-                        pos,
-                      );
+                      _handleWrongTap('cable_early', pos, isDistractor: false);
                     }
                   },
                 ),
@@ -1070,8 +1307,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                   id: 'wrench',
                   emoji: '🔧',
                   label: 'Wrench',
+                  isWrongChoice: true,
                   onTap: (pos) =>
-                      _recordEvent(GameplayEventType.tapWrong, 'wrench', pos),
+                      _handleWrongTap('wrench', pos, isDistractor: false),
                 ),
               ),
             ],
@@ -1096,15 +1334,15 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {
+                    onTapDown: (d) {
                       if (_isCompleted || _isPaused) return;
                       if (_keySelected) {
-                        _handleCorrectClick('door', Offset.zero);
+                        _handleCorrectClick('door', d.globalPosition);
                       } else {
-                        _recordEvent(
-                          GameplayEventType.tapWrong,
+                        _handleWrongTap(
                           'door_locked',
-                          Offset.zero,
+                          d.globalPosition,
+                          isDistractor: false,
                         );
                       }
                     },
@@ -1148,8 +1386,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                   id: 'hammer',
                   emoji: '🔨',
                   label: 'Hammer',
+                  isWrongChoice: true,
                   onTap: (pos) =>
-                      _recordEvent(GameplayEventType.tapWrong, 'hammer', pos),
+                      _handleWrongTap('hammer', pos, isDistractor: false),
                 ),
               ),
             ],
@@ -1163,11 +1402,15 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   Widget _buildTappableObject({
     required String id,
     required String emoji,
-    required Function(Offset) onTap,
+    required void Function(Offset globalPos) onTap,
     String? label,
     bool isGlowing = false,
     Color glowColor = AppColors.primary,
+    bool isWrongChoice = false,
   }) {
+    Offset? tapPos;
+    final reduceMotion = Provider.of<AppState>(context).reduceMotion;
+
     return Semantics(
       button: true,
       label: label ?? id,
@@ -1175,38 +1418,74 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         color: Colors.transparent,
         child: InkWell(
           customBorder: const CircleBorder(),
+          onTapDown: (d) => tapPos = d.globalPosition,
           onTap: () {
             if (_isCompleted || _isPaused) return;
-            onTap(Offset.zero);
+            final size = MediaQuery.of(context).size;
+            final pos = tapPos ?? Offset(size.width * 0.5, size.height * 0.5);
+            onTap(pos);
           },
           child: AnimatedBuilder(
-            animation: _pulseController,
+            animation: Listenable.merge([
+              _pulseController,
+              _shakeController,
+              _itemBobController,
+            ]),
             builder: (context, child) {
               double pulse = isGlowing ? _pulseController.value * 6.0 : 0.0;
-              return Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isGlowing
-                        ? glowColor.withValues(alpha: 0.6)
-                        : AppColors.primary.withValues(alpha: 0.15),
-                    width: 2,
+              double shakeX = 0;
+              double bobX = 0;
+              double bobY = 0;
+              if (_shakingObjectId == id) {
+                shakeX = math.sin(_shakeController.value * math.pi * 10) * 12;
+              }
+              if (!reduceMotion) {
+                final phase = (id.hashCode % 360) * math.pi / 180;
+                final bobT = _itemBobController.value * math.pi * 2;
+                bobX = math.sin(bobT + phase) * 10;
+                bobY = math.cos(bobT + phase * 1.4) * 8;
+              }
+              final showWrongGlow =
+                  _shakingObjectId == id && _shakeController.isAnimating;
+
+              return Transform.translate(
+                offset: Offset(shakeX + bobX, bobY),
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: showWrongGlow
+                        ? AppColors.accentRed.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.92),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: showWrongGlow
+                          ? AppColors.accentRed
+                          : (isGlowing
+                                ? glowColor.withValues(alpha: 0.6)
+                                : isWrongChoice
+                                ? AppColors.textMuted.withValues(alpha: 0.25)
+                                : AppColors.primary.withValues(alpha: 0.15)),
+                      width: showWrongGlow ? 3 : 2,
+                    ),
+                    boxShadow: [
+                      if (isGlowing)
+                        BoxShadow(
+                          color: glowColor.withValues(alpha: 0.35),
+                          blurRadius: 12 + pulse,
+                          spreadRadius: 2,
+                        ),
+                      if (showWrongGlow)
+                        BoxShadow(
+                          color: AppColors.accentRed.withValues(alpha: 0.45),
+                          blurRadius: 18,
+                          spreadRadius: 3,
+                        ),
+                    ],
                   ),
-                  boxShadow: isGlowing
-                      ? [
-                          BoxShadow(
-                            color: glowColor.withValues(alpha: 0.35),
-                            blurRadius: 12 + pulse,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
+                  child: Text(emoji, style: const TextStyle(fontSize: 36)),
                 ),
-                child: Text(emoji, style: const TextStyle(fontSize: 36)),
               );
             },
           ),
@@ -1234,13 +1513,26 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
 
       Widget distWidget;
       if (i == 0) {
-        // Blinking Star
+        // Blinking Star with gentle drift
         distWidget = AnimatedBuilder(
-          animation: _pulseController,
+          animation: Listenable.merge([
+            _pulseController,
+            _distractorMotionController,
+          ]),
           builder: (context, child) {
+            final driftX =
+                math.sin(
+                  _distractorMotionController.value * math.pi * 2 + 0.5,
+                ) *
+                18;
+            final driftY =
+                math.cos(_distractorMotionController.value * math.pi * 2) * 12;
             return Opacity(
               opacity: 0.2 + (_pulseController.value * 0.8),
-              child: child,
+              child: Transform.translate(
+                offset: Offset(driftX, driftY),
+                child: child,
+              ),
             );
           },
           child: const Text('⭐', style: TextStyle(fontSize: 40)),
@@ -1250,22 +1542,29 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         distWidget = AnimatedBuilder(
           animation: _distractorMotionController,
           builder: (context, child) {
-            double offset = _distractorMotionController.value * 25.0;
+            double offsetY = _distractorMotionController.value * 40.0;
+            double offsetX =
+                math.sin(_distractorMotionController.value * math.pi * 2) * 14;
             return Transform.translate(
-              offset: Offset(0, -offset),
+              offset: Offset(offsetX, -offsetY),
               child: child,
             );
           },
           child: const Text('🎈', style: TextStyle(fontSize: 44)),
         );
       } else if (i == 2) {
-        // Spin Gear
+        // Spin Gear with bobbing
         distWidget = AnimatedBuilder(
           animation: _distractorMotionController,
           builder: (context, child) {
-            return Transform.rotate(
-              angle: _distractorMotionController.value * 2 * math.pi,
-              child: child,
+            final bobY =
+                math.sin(_distractorMotionController.value * math.pi * 2) * 10;
+            return Transform.translate(
+              offset: Offset(0, bobY),
+              child: Transform.rotate(
+                angle: _distractorMotionController.value * 2 * math.pi,
+                child: child,
+              ),
             );
           },
           child: const Text('⚙️', style: TextStyle(fontSize: 38)),
@@ -1275,33 +1574,51 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         distWidget = AnimatedBuilder(
           animation: _distractorMotionController,
           builder: (context, child) {
-            double offset =
-                math.sin(_distractorMotionController.value * math.pi) * 35.0;
+            double offsetY =
+                math.sin(_distractorMotionController.value * math.pi) * 50.0;
+            double offsetX =
+                math.cos(_distractorMotionController.value * math.pi * 2) * 16;
             return Transform.translate(
-              offset: Offset(0, -offset),
+              offset: Offset(offsetX, -offsetY),
               child: child,
             );
           },
           child: const Text('⚽', style: TextStyle(fontSize: 34)),
         );
       } else {
-        // Blinking Diamond
+        // Blinking Diamond with floating motion
         distWidget = AnimatedBuilder(
-          animation: _pulseController,
+          animation: Listenable.merge([
+            _pulseController,
+            _distractorMotionController,
+          ]),
           builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withValues(
-                      alpha: 0.3 * _pulseController.value,
+            final driftX =
+                math.sin(
+                  _distractorMotionController.value * math.pi * 2 + 1.2,
+                ) *
+                16;
+            final driftY =
+                math.cos(
+                  _distractorMotionController.value * math.pi * 2 + 0.8,
+                ) *
+                14;
+            return Transform.translate(
+              offset: Offset(driftX, driftY),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(
+                        alpha: 0.3 * _pulseController.value,
+                      ),
+                      blurRadius: 15,
                     ),
-                    blurRadius: 15,
-                  ),
-                ],
+                  ],
+                ),
+                child: child,
               ),
-              child: child,
             );
           },
           child: const Text('💎', style: TextStyle(fontSize: 32)),
@@ -1316,12 +1633,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
             color: Colors.transparent,
             child: InkWell(
               customBorder: const CircleBorder(),
-              onTap: () {
-                if (_isCompleted || _isPaused) return;
-                _recordEvent(
-                  GameplayEventType.tapDistractor,
+              onTapDown: (d) {
+                _handleWrongTap(
                   'distractor_$i',
-                  Offset.zero,
+                  d.globalPosition,
+                  isDistractor: true,
                 );
               },
               child: SizedBox(
