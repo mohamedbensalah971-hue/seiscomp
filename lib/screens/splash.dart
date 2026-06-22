@@ -14,7 +14,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Particle> _particles = List.generate(40, (index) => Particle());
 
@@ -32,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Future<void> _initializeApp() async {
     final appState = Provider.of<AppState>(context, listen: false);
     await appState.init();
-    
+
     // Let splash play for 2.5 seconds to show transition
     await Future.delayed(const Duration(milliseconds: 2500));
 
@@ -67,138 +68,140 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         decoration: const BoxDecoration(gradient: AppGradients.background),
         child: Stack(
           children: [
-          // Ambient particle painter
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              for (var p in _particles) {
-                p.update();
-              }
-              return CustomPaint(
-                painter: ParticlePainter(_particles),
-                child: Container(),
-              );
-            },
-          ),
-          
-          // Background soft glowing lights
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.15),
-                    blurRadius: 100,
-                  ),
-                ],
-              ),
+            // Ambient particle painter
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                for (var p in _particles) {
+                  p.update();
+                }
+                return CustomPaint(
+                  painter: ParticlePainter(_particles),
+                  child: Container(),
+                );
+              },
             ),
-          ),
-          Positioned(
-            bottom: -50,
-            right: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    blurRadius: 90,
-                  ),
-                ],
-              ),
-            ),
-          ),
 
-          // Central content
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Magical Glowing brain icon representation
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 1500),
-                  curve: Curves.easeOutBack,
-                  builder: (context, val, child) {
-                    return Transform.scale(
-                      scale: val,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.backgroundCard,
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
+            // Background soft glowing lights
+            Positioned(
+              top: -100,
+              left: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 100,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              right: -50,
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.12),
+                      blurRadius: 90,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Central content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Magical Glowing brain icon representation
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1500),
+                    curve: Curves.easeOutBack,
+                    builder: (context, val, child) {
+                      return Transform.scale(scale: val, child: child);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.backgroundCard,
+                        border: Border.all(
                           color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 30,
-                          spreadRadius: 2,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 30,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons
+                            .wb_incandescent_outlined, // clean magical bulb representation
+                        size: 72,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // App Title
+                  Text(
+                    AppLocalizations.get('app_title', lang),
+                    style: AppTextStyles.displayLarge(context).copyWith(
+                      shadows: [
+                        const Shadow(
+                          color: AppColors.primary,
+                          blurRadius: 15,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.wb_incandescent_outlined, // clean magical bulb representation
-                      size: 72,
-                      color: AppColors.secondary,
-                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                
-                // App Title
-                Text(
-                  AppLocalizations.get('app_title', lang),
-                  style: AppTextStyles.displayLarge(context).copyWith(
-                    shadows: [
-                      const Shadow(
-                        color: AppColors.primary,
-                        blurRadius: 15,
-                        offset: Offset(0, 2),
+                  const SizedBox(height: 12),
+
+                  // App Subtitle
+                  Text(
+                    AppLocalizations.get('splash_subtitle', lang),
+                    style: AppTextStyles.bodyMedium(
+                      context,
+                    ).copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 64),
+
+                  // Sparkly loading bar indicator
+                  SizedBox(
+                    width: 140,
+                    height: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.12,
+                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.secondary,
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // App Subtitle
-                Text(
-                  AppLocalizations.get('splash_subtitle', lang),
-                  style: AppTextStyles.bodyMedium(context).copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 64),
-                
-                // Sparkly loading bar indicator
-                SizedBox(
-                  width: 140,
-                  height: 4,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );

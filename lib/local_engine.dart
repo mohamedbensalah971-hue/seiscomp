@@ -62,6 +62,12 @@ class LocalAIEngine implements AIAgentService {
       'memoryScore': profile.memoryScore,
       'averageReactionTimeSeconds': profile.averageReactionTimeSeconds,
       'attentionVariability': profile.attentionVariability,
+      'engagementScore': profile.engagementScore,
+      'overallTrend': profile.overallTrend,
+      'strongestSkill': profile.strongestSkill,
+      'growthFocus': profile.growthFocus,
+      'successStreak': profile.successStreak,
+      'modelConfidence': _confidenceFor(profile.totalMissions),
       'completedMissions': sessions
           .where((session) => session.completed)
           .length,
@@ -79,4 +85,8 @@ class LocalAIEngine implements AIAgentService {
           .toList(),
     };
   }
+
+  static double _confidenceFor(int missionCount) => double.parse(
+    (0.46 + missionCount * 0.07).clamp(0.46, 0.96).toStringAsFixed(2),
+  );
 }

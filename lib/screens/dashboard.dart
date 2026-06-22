@@ -40,6 +40,10 @@ class DashboardScreen extends StatelessWidget {
         .toDouble();
     final double variability = (metrics['attentionVariability'] as num)
         .toDouble();
+    final double engagement = (metrics['engagementScore'] as num).toDouble();
+    final double modelConfidence = (metrics['modelConfidence'] as num)
+        .toDouble();
+    final String trend = metrics['overallTrend'] as String;
     final int completedCount = metrics['completedMissions'] as int;
 
     final List<double> attentionHistory = List<double>.from(
@@ -138,6 +142,22 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
+                _buildIntelligencePanel(
+                  context,
+                  appState,
+                  lang,
+                  engagement: engagement,
+                  confidence: modelConfidence,
+                  trend: trend,
+                  scores: {
+                    'attention': attentionScore,
+                    'impulse_control': impulseScore,
+                    'planning': planningScore,
+                    'memory': memoryScore,
+                  },
+                ),
+                const SizedBox(height: 20),
+
                 // Chart Section
                 Text(
                   AppLocalizations.get('focus_progress', lang),
@@ -200,6 +220,248 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildIntelligencePanel(
+    BuildContext context,
+    AppState appState,
+    String lang, {
+    required double engagement,
+    required double confidence,
+    required String trend,
+    required Map<String, double> scores,
+  }) {
+    final profile = appState.behavioralProfile;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.13),
+            AppColors.secondary.withValues(alpha: 0.09),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.psychology_alt_rounded,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  AppLocalizations.get('ai_intelligence', lang),
+                  style: AppTextStyles.displaySmall(context),
+                ),
+              ),
+              Text(
+                '${(confidence * 100).round()}%',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppLocalizations.get('model_confidence', lang),
+            style: AppTextStyles.bodySmall(context),
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: confidence,
+              minHeight: 9,
+              backgroundColor: Colors.white.withValues(alpha: 0.55),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildInsightPill(
+                Icons.bolt_rounded,
+                '${AppLocalizations.get('engagement', lang)} ${engagement.round()}%',
+                AppColors.accentYellow,
+              ),
+              _buildInsightPill(
+                Icons.local_fire_department_rounded,
+                '${AppLocalizations.get('success_streak', lang)} ${profile.successStreak}',
+                AppColors.accentRed,
+              ),
+              _buildInsightPill(
+                Icons.trending_up_rounded,
+                AppLocalizations.get('trend_$trend', lang),
+                AppColors.accentGreen,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFocusTile(
+                  AppLocalizations.get('strongest_skill', lang),
+                  AppLocalizations.get(profile.strongestSkill, lang),
+                  Icons.workspace_premium_rounded,
+                  AppColors.accentYellow,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildFocusTile(
+                  AppLocalizations.get('growth_focus', lang),
+                  AppLocalizations.get(profile.growthFocus, lang),
+                  Icons.track_changes_rounded,
+                  AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...scores.entries.map(
+            (entry) => _buildSkillBar(
+              AppLocalizations.get(entry.key, lang),
+              entry.value,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightPill(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFocusTile(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 19),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 9),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkillBar(String label, double value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: LinearProgressIndicator(
+                value: value / 100,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.58),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.secondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 7),
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${value.round()}%',
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w900,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -492,11 +754,7 @@ class DashboardScreen extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    res.missionId == 'dark_room'
-                        ? Icons.lightbulb_outline
-                        : (res.missionId == 'robot_room'
-                              ? Icons.android
-                              : Icons.lock_open),
+                    _missionIcon(res.missionId),
                     color: isSuccess
                         ? AppColors.secondary
                         : AppColors.accentRed,
@@ -542,4 +800,13 @@ class DashboardScreen extends StatelessWidget {
       },
     );
   }
+
+  IconData _missionIcon(String missionId) => switch (missionId) {
+    'dark_room' => Icons.lightbulb_outline,
+    'robot_room' => Icons.smart_toy_outlined,
+    'door_room' => Icons.lock_open,
+    'garden_room' => Icons.local_florist_rounded,
+    'memory_vault' => Icons.hub_rounded,
+    _ => Icons.extension_rounded,
+  };
 }

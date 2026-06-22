@@ -406,6 +406,17 @@ class _ResultsScreenState extends State<ResultsScreen>
                                   Icons.timer_outlined,
                                   '${appState.currentDifficulty.timeLimitSeconds} ${AppLocalizations.get('seconds', lang)}',
                                 ),
+                                _buildDecisionChip(
+                                  Icons.psychology_alt_rounded,
+                                  '${(appState.lastDecisionConfidence * 100).round()}% ${AppLocalizations.get('model_confidence', lang)}',
+                                ),
+                                _buildDecisionChip(
+                                  Icons.track_changes_rounded,
+                                  AppLocalizations.get(
+                                    appState.lastFocusSkill,
+                                    lang,
+                                  ),
+                                ),
                               ],
                             ),
                           ],

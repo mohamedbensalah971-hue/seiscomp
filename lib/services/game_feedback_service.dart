@@ -35,7 +35,11 @@ class GameFeedbackService {
     }
   }
 
-  Future<void> speakGoal(String missionId, String lang, {required bool enabled}) async {
+  Future<void> speakGoal(
+    String missionId,
+    String lang, {
+    required bool enabled,
+  }) async {
     if (!enabled) return;
     await init();
     await _setLanguage(lang);
@@ -66,7 +70,11 @@ class GameFeedbackService {
     await _speak(AppLocalizations.get(key, lang));
   }
 
-  Future<void> speakHint(String missionId, String lang, {required bool enabled}) async {
+  Future<void> speakHint(
+    String missionId,
+    String lang, {
+    required bool enabled,
+  }) async {
     if (!enabled) return;
     await init();
     await _setLanguage(lang);
@@ -80,7 +88,10 @@ class GameFeedbackService {
     await _speak(AppLocalizations.get('voice_great', lang));
   }
 
-  Future<void> speakMissionComplete(String lang, {required bool voiceEnabled}) async {
+  Future<void> speakMissionComplete(
+    String lang, {
+    required bool voiceEnabled,
+  }) async {
     if (!voiceEnabled) return;
     await init();
     await _setLanguage(lang);

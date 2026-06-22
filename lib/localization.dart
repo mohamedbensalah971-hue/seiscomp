@@ -60,6 +60,17 @@ class AppLocalizations {
       'decision_guided_puzzle': 'Guided Puzzle',
       'decision_harder_logic': 'Harder Logic Puzzle',
       'decision_balanced_puzzle': 'Balanced Puzzle',
+      'ai_intelligence': 'Adaptive Intelligence',
+      'model_confidence': 'Model confidence',
+      'engagement': 'Engagement',
+      'strongest_skill': 'Strongest skill',
+      'growth_focus': 'Growth focus',
+      'learning_trend': 'Learning trend',
+      'success_streak': 'Success streak',
+      'trend_improving': 'Improving',
+      'trend_steady': 'Steady',
+      'trend_needs_support': 'Needs support',
+      'mission_progress': 'Quest progress',
       'recent_sessions': 'Recent Sessions',
       'completed_missions_title': 'Completed Missions',
       'diagnostic_notice':
@@ -103,6 +114,15 @@ class AppLocalizations {
       'door_room_desc':
           'The door is locked! Find the hidden key and unlock it.',
       'door_room_goal': '🔑 Find the key and open the door',
+      'garden_room_title': 'Enchanted Garden',
+      'garden_room_desc':
+          'Prepare the watering can, fill it, and help the sleepy flower bloom.',
+      'garden_room_goal': '🌱 Water the flower in the right order',
+      'memory_vault_title': 'Memory Vault',
+      'memory_vault_desc':
+          'Remember the glowing symbol sequence and repeat it in order.',
+      'memory_vault_goal': '🧠 Repeat the symbol sequence',
+      'memory_sequence_prefix': 'Repeat',
       'skills': 'Skills',
       'skill_attention': '🎯 Attention',
       'skill_logic': '🧠 Logic',
@@ -115,6 +135,10 @@ class AppLocalizations {
       'hint_robot_room': '💡 Hint: Tap the battery, then tap the power cable!',
       'hint_door_room':
           '💡 Hint: Tap the wooden box to find the key, then tap the key, then tap the door!',
+      'hint_garden_room':
+          '💡 Hint: Pick up the watering can, fill it at the tap, then water the flower!',
+      'hint_memory_vault':
+          '💡 Hint: Follow the symbols from left to right and restart calmly if needed.',
       'hint_button': 'Hint',
       'congratulations': 'Amazing focus!',
       'pet_upgrade': 'Pet Upgrade',
@@ -204,6 +228,17 @@ class AppLocalizations {
       'decision_guided_puzzle': 'Puzzle guidé',
       'decision_harder_logic': 'Puzzle logique plus difficile',
       'decision_balanced_puzzle': 'Puzzle équilibré',
+      'ai_intelligence': 'Intelligence adaptative',
+      'model_confidence': 'Confiance du modèle',
+      'engagement': 'Engagement',
+      'strongest_skill': 'Point fort',
+      'growth_focus': 'Axe de progression',
+      'learning_trend': 'Tendance d’apprentissage',
+      'success_streak': 'Série de réussites',
+      'trend_improving': 'En progression',
+      'trend_steady': 'Stable',
+      'trend_needs_support': 'Soutien conseillé',
+      'mission_progress': 'Progression des missions',
       'recent_sessions': 'Sessions récentes',
       'completed_missions_title': 'Missions terminées',
       'diagnostic_notice':
@@ -248,6 +283,15 @@ class AppLocalizations {
       'door_room_desc':
           'La porte est verrouillée ! Trouve la clé cachée et déverrouille-la.',
       'door_room_goal': '🔑 Trouve la clé et ouvre la porte',
+      'garden_room_title': 'Jardin enchanté',
+      'garden_room_desc':
+          'Prépare l’arrosoir, remplis-le et aide la fleur endormie à éclore.',
+      'garden_room_goal': '🌱 Arrose la fleur dans le bon ordre',
+      'memory_vault_title': 'Coffre de mémoire',
+      'memory_vault_desc':
+          'Mémorise la suite de symboles lumineux et répète-la dans l’ordre.',
+      'memory_vault_goal': '🧠 Répète la suite de symboles',
+      'memory_sequence_prefix': 'Répète',
       'skills': 'Compétences',
       'skill_attention': '🎯 Attention',
       'skill_logic': '🧠 Logique',
@@ -261,6 +305,10 @@ class AppLocalizations {
           '💡 Indice : Appuie sur la batterie, puis sur le câble d\'alimentation !',
       'hint_door_room':
           '💡 Indice : Appuie sur la boîte en bois pour trouver la clé, puis sur la clé, puis sur la porte !',
+      'hint_garden_room':
+          '💡 Indice : Prends l’arrosoir, remplis-le au robinet, puis arrose la fleur !',
+      'hint_memory_vault':
+          '💡 Indice : Suis les symboles de gauche à droite et recommence calmement si nécessaire.',
       'hint_button': 'Indice',
       'congratulations': 'Super concentration !',
       'pet_upgrade': 'Améliorer l\'animal',
@@ -351,6 +399,17 @@ class AppLocalizations {
       'decision_guided_puzzle': 'لغز موجه',
       'decision_harder_logic': 'لغز منطقي أصعب',
       'decision_balanced_puzzle': 'لغز متوازن',
+      'ai_intelligence': 'الذكاء التكيفي',
+      'model_confidence': 'ثقة النموذج',
+      'engagement': 'التفاعل',
+      'strongest_skill': 'أقوى مهارة',
+      'growth_focus': 'محور التطور',
+      'learning_trend': 'اتجاه التعلم',
+      'success_streak': 'سلسلة النجاحات',
+      'trend_improving': 'في تحسن',
+      'trend_steady': 'مستقر',
+      'trend_needs_support': 'يحتاج إلى دعم',
+      'mission_progress': 'تقدم المهمات',
       'recent_sessions': 'الجلسات الأخيرة',
       'completed_missions_title': 'المهمات المنجزة',
       'diagnostic_notice':
@@ -394,6 +453,14 @@ class AppLocalizations {
       'door_room_desc':
           'الباب مغلق بإحكام! ابحث عن المفتاح المخفي خلف الصندوق لفتحه.',
       'door_room_goal': '🔑 اعثر على المفتاح وافتح الباب',
+      'garden_room_title': 'الحديقة المسحورة',
+      'garden_room_desc':
+          'جهز إبريق الري واملأه وساعد الزهرة النائمة على التفتح.',
+      'garden_room_goal': '🌱 اسقِ الزهرة بالترتيب الصحيح',
+      'memory_vault_title': 'خزنة الذاكرة',
+      'memory_vault_desc': 'تذكر تسلسل الرموز المضيئة وكرره بالترتيب.',
+      'memory_vault_goal': '🧠 كرر تسلسل الرموز',
+      'memory_sequence_prefix': 'كرر',
       'skills': 'المهارات المستهدفة',
       'skill_attention': '🎯 الانتباه',
       'skill_logic': '🧠 المنطق',
@@ -407,6 +474,10 @@ class AppLocalizations {
           '💡 تلميح: انقر أولاً على البطارية، ثم انقر على سلك التوصيل الكهربائي!',
       'hint_door_room':
           '💡 تلميح: انقر على الصندوق الخشبي للعثور على المفتاح، ثم انقر على المفتاح، ثم انقر على الباب!',
+      'hint_garden_room':
+          '💡 تلميح: خذ إبريق الري واملأه من الصنبور ثم اسقِ الزهرة!',
+      'hint_memory_vault':
+          '💡 تلميح: اتبع الرموز من اليسار إلى اليمين وابدأ بهدوء عند الحاجة.',
       'hint_button': 'مساعدة',
       'congratulations': 'تركيز رائع ومذهل!',
       'pet_upgrade': 'ترقية الحيوان الأليف',

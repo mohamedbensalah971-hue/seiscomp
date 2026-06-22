@@ -64,7 +64,9 @@ class MindSparkQuestApp extends StatelessWidget {
         ),
         switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return AppColors.secondary;
+            if (states.contains(WidgetState.selected)) {
+              return AppColors.secondary;
+            }
             return AppColors.textMuted;
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
@@ -96,9 +98,9 @@ class MindSparkQuestApp extends StatelessWidget {
       builder: (context, child) {
         final isRtl = appState.language == 'ar';
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale),
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
           child: Directionality(
             textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
             child: child!,

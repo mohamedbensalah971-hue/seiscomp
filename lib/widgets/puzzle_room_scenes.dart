@@ -28,9 +28,21 @@ class DarkRoomScene extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color.lerp(const Color(0xFF3D3A52), const Color(0xFFFFF8E7), t)!,
-                    Color.lerp(const Color(0xFF252338), const Color(0xFFFFE8CC), t)!,
-                    Color.lerp(const Color(0xFF151320), const Color(0xFFE8D5C4), t)!,
+                    Color.lerp(
+                      const Color(0xFF3D3A52),
+                      const Color(0xFFFFF8E7),
+                      t,
+                    )!,
+                    Color.lerp(
+                      const Color(0xFF252338),
+                      const Color(0xFFFFE8CC),
+                      t,
+                    )!,
+                    Color.lerp(
+                      const Color(0xFF151320),
+                      const Color(0xFFE8D5C4),
+                      t,
+                    )!,
                   ],
                 ),
               ),
@@ -80,8 +92,16 @@ class DarkRoomScene extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color.lerp(const Color(0xFF1A1828), AppColors.roomFloor, t)!,
-                      Color.lerp(const Color(0xFF0F0E16), const Color(0xFFD4C4B0), t)!,
+                      Color.lerp(
+                        const Color(0xFF1A1828),
+                        AppColors.roomFloor,
+                        t,
+                      )!,
+                      Color.lerp(
+                        const Color(0xFF0F0E16),
+                        const Color(0xFFD4C4B0),
+                        t,
+                      )!,
                     ],
                   ),
                 ),
@@ -96,10 +116,18 @@ class DarkRoomScene extends StatelessWidget {
               height: 180,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Color.lerp(const Color(0xFF2E2B42), AppColors.roomWall, t),
+                  color: Color.lerp(
+                    const Color(0xFF2E2B42),
+                    AppColors.roomWall,
+                    t,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Color.lerp(Colors.white10, AppColors.primary.withValues(alpha: 0.15), t)!,
+                    color: Color.lerp(
+                      Colors.white10,
+                      AppColors.primary.withValues(alpha: 0.15),
+                      t,
+                    )!,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -120,10 +148,18 @@ class DarkRoomScene extends StatelessWidget {
                 width: 70,
                 height: 90,
                 decoration: BoxDecoration(
-                  color: Color.lerp(const Color(0xFF1A2840), AppColors.accentSky.withValues(alpha: 0.5), t),
+                  color: Color.lerp(
+                    const Color(0xFF1A2840),
+                    AppColors.accentSky.withValues(alpha: 0.5),
+                    t,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Color.lerp(Colors.white24, AppColors.primary.withValues(alpha: 0.3), t)!,
+                    color: Color.lerp(
+                      Colors.white24,
+                      AppColors.primary.withValues(alpha: 0.3),
+                      t,
+                    )!,
                     width: 3,
                   ),
                 ),
@@ -144,7 +180,11 @@ class DarkRoomScene extends StatelessWidget {
               height: 50,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Color.lerp(const Color(0xFF3A2848), AppColors.accentPeach.withValues(alpha: 0.4), t),
+                  color: Color.lerp(
+                    const Color(0xFF3A2848),
+                    AppColors.accentPeach.withValues(alpha: 0.4),
+                    t,
+                  ),
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
@@ -157,7 +197,11 @@ class DarkRoomScene extends StatelessWidget {
               child: _FurniturePiece(
                 width: 60,
                 height: 50,
-                color: Color.lerp(const Color(0xFF4A4038), const Color(0xFFC4A882), t)!,
+                color: Color.lerp(
+                  const Color(0xFF4A4038),
+                  const Color(0xFFC4A882),
+                  t,
+                )!,
                 lit: t > 0.5,
               ),
             ),
@@ -196,10 +240,7 @@ class RobotLabScene extends StatelessWidget {
         ),
 
         // Lab grid floor
-        CustomPaint(
-          painter: _GridFloorPainter(),
-          size: Size.infinite,
-        ),
+        CustomPaint(painter: _GridFloorPainter(), size: Size.infinite),
 
         // Workbench
         Positioned(
@@ -223,11 +264,7 @@ class RobotLabScene extends StatelessWidget {
         ),
 
         // Shelves with tools
-        Positioned(
-          top: 50,
-          left: 16,
-          child: _ShelfDecor(),
-        ),
+        Positioned(top: 50, left: 16, child: _ShelfDecor()),
 
         // Battery cable line when connected
         if (batteryConnected)
@@ -257,7 +294,9 @@ class RobotLabScene extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: active
-                          ? (isPowered ? AppColors.accentGreen : AppColors.accentYellow)
+                          ? (isPowered
+                                ? AppColors.accentGreen
+                                : AppColors.accentYellow)
                           : AppColors.textMuted.withValues(alpha: 0.3),
                       boxShadow: active && isPowered
                           ? [
@@ -306,7 +345,11 @@ class DoorCorridorScene extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFFFF5EE), Color(0xFFF5EDE4), Color(0xFFE8DDD4)],
+                  colors: [
+                    Color(0xFFFFF5EE),
+                    Color(0xFFF5EDE4),
+                    Color(0xFFE8DDD4),
+                  ],
                 ),
               ),
             ),
@@ -354,13 +397,19 @@ class DoorCorridorScene extends StatelessWidget {
                                 ? const Color(0xFF6B5344)
                                 : const Color(0xFFA08060),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF5A4030), width: 2),
+                            border: Border.all(
+                              color: const Color(0xFF5A4030),
+                              width: 2,
+                            ),
                           ),
                           child: doorOpened
                               ? null
                               : const Center(
-                                  child: Icon(Icons.lock_rounded,
-                                      color: Color(0xFFFFD166), size: 36),
+                                  child: Icon(
+                                    Icons.lock_rounded,
+                                    color: Color(0xFFFFD166),
+                                    size: 36,
+                                  ),
                                 ),
                         ),
                       ),
@@ -417,7 +466,10 @@ class DoorCorridorScene extends StatelessWidget {
                             left: 20,
                             child: Transform.scale(
                               scale: val,
-                              child: const Text('🔑', style: TextStyle(fontSize: 32)),
+                              child: const Text(
+                                '🔑',
+                                style: TextStyle(fontSize: 32),
+                              ),
                             ),
                           ),
                         ],
@@ -456,7 +508,9 @@ class _FurniturePiece extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: lit ? AppColors.accentYellow.withValues(alpha: 0.2) : AppColors.roomShadow,
+            color: lit
+                ? AppColors.accentYellow.withValues(alpha: 0.2)
+                : AppColors.roomShadow,
             blurRadius: lit ? 12 : 6,
             offset: const Offset(0, 4),
           ),
@@ -471,11 +525,7 @@ class _ShelfDecor extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 80,
-          height: 8,
-          color: const Color(0xFFC4A882),
-        ),
+        Container(width: 80, height: 8, color: const Color(0xFFC4A882)),
         const SizedBox(height: 4),
         Row(
           children: const [
@@ -536,7 +586,11 @@ class _GridFloorPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     for (double x = 0; x < size.width; x += 40) {
-      canvas.drawLine(Offset(x, size.height * 0.6), Offset(x, size.height), paint);
+      canvas.drawLine(
+        Offset(x, size.height * 0.6),
+        Offset(x, size.height),
+        paint,
+      );
     }
     for (double y = size.height * 0.6; y < size.height; y += 30) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
@@ -589,22 +643,22 @@ class _CorridorPainter extends CustomPainter {
 
     if (doorOpen > 0) {
       final glow = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            AppColors.accentYellow.withValues(alpha: 0.3 * doorOpen),
-            Colors.transparent,
-          ],
-        ).createShader(Rect.fromCenter(
-          center: Offset(cx, 200),
-          width: 200,
-          height: 200,
-        ));
+        ..shader =
+            RadialGradient(
+              colors: [
+                AppColors.accentYellow.withValues(alpha: 0.3 * doorOpen),
+                Colors.transparent,
+              ],
+            ).createShader(
+              Rect.fromCenter(center: Offset(cx, 200), width: 200, height: 200),
+            );
       canvas.drawCircle(Offset(cx, 200), 80 * doorOpen, glow);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _CorridorPainter old) => old.doorOpen != doorOpen;
+  bool shouldRepaint(covariant _CorridorPainter old) =>
+      old.doorOpen != doorOpen;
 }
 
 /// Animated lamp widget with realistic glow.
@@ -632,7 +686,9 @@ class RoomLamp extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accentYellow.withValues(alpha: 0.5 * glow),
+                      color: AppColors.accentYellow.withValues(
+                        alpha: 0.5 * glow,
+                      ),
                       blurRadius: 60 * glow,
                       spreadRadius: 20 * glow,
                     ),
@@ -646,7 +702,11 @@ class RoomLamp extends StatelessWidget {
                   Icons.wb_incandescent_rounded,
                   size: 100,
                   color: isLit
-                      ? Color.lerp(Colors.white54, AppColors.accentYellow, glow)!
+                      ? Color.lerp(
+                          Colors.white54,
+                          AppColors.accentYellow,
+                          glow,
+                        )!
                       : Colors.white24,
                 ),
                 if (isLit)
@@ -691,7 +751,8 @@ class LabRobot extends StatefulWidget {
   State<LabRobot> createState() => _LabRobotState();
 }
 
-class _LabRobotState extends State<LabRobot> with SingleTickerProviderStateMixin {
+class _LabRobotState extends State<LabRobot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _blinkController;
 
   @override
@@ -731,7 +792,9 @@ class _LabRobotState extends State<LabRobot> with SingleTickerProviderStateMixin
                 : Colors.white.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: widget.isPowered ? AppColors.accentGreen : AppColors.textMuted.withValues(alpha: 0.3),
+              color: widget.isPowered
+                  ? AppColors.accentGreen
+                  : AppColors.textMuted.withValues(alpha: 0.3),
               width: 2,
             ),
             boxShadow: widget.isPowered
@@ -747,18 +810,24 @@ class _LabRobotState extends State<LabRobot> with SingleTickerProviderStateMixin
           child: Icon(
             Icons.smart_toy_rounded,
             size: 120,
-            color: widget.isPowered ? AppColors.accentGreen : AppColors.textMuted,
+            color: widget.isPowered
+                ? AppColors.accentGreen
+                : AppColors.textMuted,
           ),
         ),
         const SizedBox(height: 8),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 400),
           style: TextStyle(
-            color: widget.isPowered ? AppColors.accentGreen : AppColors.textMuted,
+            color: widget.isPowered
+                ? AppColors.accentGreen
+                : AppColors.textMuted,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
-          child: Text(widget.isPowered ? '🤖 Robot Online!' : '🤖 Robot Offline'),
+          child: Text(
+            widget.isPowered ? '🤖 Robot Online!' : '🤖 Robot Offline',
+          ),
         ),
       ],
     );

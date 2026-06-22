@@ -67,14 +67,13 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
     String titleKey = '${missionId}_title';
     String descKey = '${missionId}_desc';
 
-    List<String> skills = [];
-    if (missionId == 'dark_room') {
-      skills = ['skill_attention', 'skill_focus'];
-    } else if (missionId == 'robot_room') {
-      skills = ['skill_planning', 'skill_logic'];
-    } else {
-      skills = ['skill_memory', 'skill_logic'];
-    }
+    final skills = switch (missionId) {
+      'dark_room' => ['skill_attention', 'skill_focus'],
+      'robot_room' => ['skill_planning', 'skill_logic'],
+      'door_room' => ['skill_memory', 'skill_logic'],
+      'garden_room' => ['skill_planning', 'skill_attention'],
+      _ => ['skill_memory', 'skill_focus'],
+    };
 
     showDialog(
       context: context,
@@ -96,11 +95,7 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                     ),
                     child: Icon(
-                      missionId == 'dark_room'
-                          ? Icons.lightbulb_outline
-                          : (missionId == 'robot_room'
-                                ? Icons.android_outlined
-                                : Icons.lock_open_outlined),
+                      _missionIcon(missionId),
                       size: 60,
                       color: AppColors.secondary,
                     ),
@@ -503,6 +498,18 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
         color: AppColors.accentPurple,
         unlockStars: 2,
       ),
+      RoomNode(
+        id: 'garden_room',
+        icon: Icons.local_florist_rounded,
+        color: AppColors.accentGreen,
+        unlockStars: 3,
+      ),
+      RoomNode(
+        id: 'memory_vault',
+        icon: Icons.hub_rounded,
+        color: AppColors.accentPink,
+        unlockStars: 4,
+      ),
     ];
 
     // Determine completion statuses
@@ -679,6 +686,8 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
     String lang,
     AppState appState,
   ) {
+    final confidence = appState.lastDecisionConfidence;
+    final completed = appState.selectedProfile?.completedMissions.length ?? 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: GlassmorphicContainer(
@@ -717,6 +726,50 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                   Text(
                     appState.lastDecisionReason,
                     style: AppTextStyles.bodySmall(context),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: confidence,
+                            minHeight: 7,
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.10,
+                            ),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${(confidence * 100).round()}%',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildConfigChip(
+                        Icons.psychology_alt_rounded,
+                        AppLocalizations.get(appState.lastFocusSkill, lang),
+                      ),
+                      _buildConfigChip(
+                        Icons.route_rounded,
+                        '$completed/5 ${AppLocalizations.get('mission_progress', lang)}',
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -760,6 +813,15 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
       ),
     );
   }
+
+  IconData _missionIcon(String missionId) => switch (missionId) {
+    'dark_room' => Icons.lightbulb_outline_rounded,
+    'robot_room' => Icons.smart_toy_outlined,
+    'door_room' => Icons.lock_open_rounded,
+    'garden_room' => Icons.local_florist_rounded,
+    'memory_vault' => Icons.hub_rounded,
+    _ => Icons.extension_rounded,
+  };
 
   Widget _buildTreasuresContent(
     child,

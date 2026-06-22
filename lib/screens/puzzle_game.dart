@@ -64,6 +64,18 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   bool _keySelected = false;
   bool _doorOpened = false;
 
+  // Level 4: Enchanted Garden state
+  bool _wateringCanSelected = false;
+  bool _wateringCanFilled = false;
+  bool _plantWatered = false;
+
+  // Level 5: Memory Vault state
+  int _memoryStep = 0;
+  bool _memorySequenceVisible = true;
+  List<String> get _memorySequence => _difficulty.difficultyLevel >= 4
+      ? const ['moon', 'star', 'gem', 'planet']
+      : const ['moon', 'star', 'gem'];
+
   // Animation Controllers
   late AnimationController _timerController;
   late AnimationController _distractorMotionController;
@@ -217,6 +229,13 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   void _beginMission() {
     _startTime = DateTime.now();
     _timerController.forward(from: 0);
+    if (widget.missionId == 'memory_vault') {
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted && !_isCompleted && !_hintActive) {
+          setState(() => _memorySequenceVisible = false);
+        }
+      });
+    }
     // Auto hint check after the agent-specified delay.
     Future.delayed(Duration(seconds: _difficulty.hintDelaySeconds.round()), () {
       if (mounted && !_isCompleted && _events.isEmpty) {
@@ -229,6 +248,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     setState(() {
       _hintActive = true;
       _hintText = _getHintString();
+      if (widget.missionId == 'memory_vault') {
+        _memorySequenceVisible = true;
+      }
     });
     final appState = Provider.of<AppState>(context, listen: false);
     GameFeedbackService.instance.speakHint(
@@ -495,7 +517,38 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
           }
         });
       }
+    } else if (widget.missionId == 'garden_room') {
+      if (objectId == 'watering_can' && !_wateringCanSelected) {
+        setState(() => _wateringCanSelected = true);
+      } else if (objectId == 'garden_tap' &&
+          _wateringCanSelected &&
+          !_wateringCanFilled) {
+        setState(() => _wateringCanFilled = true);
+      } else if (objectId == 'flower' && _wateringCanFilled) {
+        setState(() {
+          _plantWatered = true;
+          _isCompleted = true;
+        });
+        _handleLevelCompleted();
+      }
+    } else if (widget.missionId == 'memory_vault') {
+      setState(() => _memoryStep++);
+      if (_memoryStep >= _memorySequence.length) {
+        setState(() => _isCompleted = true);
+        _handleLevelCompleted();
+      }
     }
+  }
+
+  void _handleMemoryTap(String objectId, Offset position) {
+    if (_isCompleted || _isPaused) return;
+    final expected = _memorySequence[_memoryStep];
+    if (objectId == expected) {
+      _handleCorrectClick(objectId, position);
+      return;
+    }
+    _handleWrongTap(objectId, position, isDistractor: false);
+    setState(() => _memoryStep = 0);
   }
 
   void _handleLampFailure(Offset position) {
@@ -791,26 +844,68 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
           if (_difficulty.showTimerBar)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: AnimatedBuilder(
                   animation: _timerController,
                   builder: (context, child) {
                     double progress = 1.0 - _timerController.value;
+                    final remainingSeconds =
+                        (_difficulty.timeLimitSeconds * progress).ceil();
                     Color barColor = progress > 0.4
                         ? AppColors.secondary
                         : (progress > 0.15
                               ? AppColors.accentYellow
                               : AppColors.accentRed);
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 12,
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              color: AppColors.primary,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${AppLocalizations.get('level', lang)} ${_difficulty.difficultyLevel}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.timer_outlined,
+                              color: barColor,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${remainingSeconds}s',
+                              style: TextStyle(
+                                color: barColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                      ),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 9,
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -924,6 +1019,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
             onPressed: () {
               setState(() {
                 _hintActive = false;
+                if (widget.missionId == 'memory_vault') {
+                  _memorySequenceVisible = false;
+                }
               });
             },
           ),
@@ -1177,13 +1275,96 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
         batteryConnected: _batterySelected,
         pulseAnim: _pulseController,
       );
-    } else {
+    } else if (widget.missionId == 'door_room') {
       return DoorCorridorScene(
         boxOpened: _boxOpened,
         doorOpened: _doorOpened,
         doorAnim: _doorAnim,
       );
+    } else if (widget.missionId == 'garden_room') {
+      return _buildGardenBackground();
+    } else {
+      return _buildMemoryBackground();
     }
+  }
+
+  Widget _buildGardenBackground() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFE7FFF5), Color(0xFFFFF4D8)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 110,
+            left: 24,
+            right: 24,
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.42),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(120),
+                ),
+                border: Border.all(
+                  color: AppColors.secondary.withValues(alpha: 0.28),
+                  width: 3,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 250,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFBDE7A7), Color(0xFF7BC47F)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 140,
+            right: 38,
+            child: Icon(
+              Icons.wb_sunny_rounded,
+              color: AppColors.accentYellow.withValues(alpha: 0.75),
+              size: 52,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemoryBackground() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF191638), Color(0xFF30255F), Color(0xFF15142D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, _) {
+          return CustomPaint(
+            painter: _MemoryGridPainter(_pulseController.value),
+            size: Size.infinite,
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildInteractiveGameplayElements() {
@@ -1316,7 +1497,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
           );
         },
       );
-    } else {
+    } else if (widget.missionId == 'door_room') {
       // Door Room — scene handles door/box visuals; only interactive items here
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -1389,6 +1570,200 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
                   isWrongChoice: true,
                   onTap: (pos) =>
                       _handleWrongTap('hammer', pos, isDistractor: false),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } else if (widget.missionId == 'garden_room') {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                top: h * 0.19,
+                left: w * 0.5 - 44,
+                child: _buildTappableObject(
+                  id: 'flower',
+                  emoji: _plantWatered ? '🌻' : '🥀',
+                  label: 'Flower',
+                  isGlowing: _wateringCanFilled && !_plantWatered,
+                  glowColor: AppColors.accentGreen,
+                  onTap: (pos) {
+                    if (_wateringCanFilled) {
+                      _handleCorrectClick('flower', pos);
+                    } else {
+                      _handleWrongTap('flower_early', pos, isDistractor: false);
+                    }
+                  },
+                ),
+              ),
+              Positioned(
+                bottom: h * 0.14,
+                left: w * 0.10,
+                child: _buildTappableObject(
+                  id: 'watering_can',
+                  emoji: _wateringCanFilled ? '💧' : '🪣',
+                  label: 'Watering can',
+                  isGlowing: !_wateringCanSelected,
+                  glowColor: AppColors.secondary,
+                  onTap: (pos) {
+                    if (!_wateringCanSelected) {
+                      _handleCorrectClick('watering_can', pos);
+                    } else {
+                      _handleWrongTap(
+                        'watering_can_again',
+                        pos,
+                        isDistractor: false,
+                      );
+                    }
+                  },
+                ),
+              ),
+              Positioned(
+                bottom: h * 0.14,
+                right: w * 0.10,
+                child: _buildTappableObject(
+                  id: 'garden_tap',
+                  emoji: '🚰',
+                  label: 'Water tap',
+                  isGlowing: _wateringCanSelected && !_wateringCanFilled,
+                  glowColor: AppColors.accentSky,
+                  onTap: (pos) {
+                    if (_wateringCanSelected && !_wateringCanFilled) {
+                      _handleCorrectClick('garden_tap', pos);
+                    } else {
+                      _handleWrongTap(
+                        'garden_tap_early',
+                        pos,
+                        isDistractor: false,
+                      );
+                    }
+                  },
+                ),
+              ),
+              Positioned(
+                bottom: h * 0.31,
+                left: w * 0.5 - 36,
+                child: _buildTappableObject(
+                  id: 'garden_shovel',
+                  emoji: '🪏',
+                  label: 'Shovel',
+                  isWrongChoice: true,
+                  onTap: (pos) => _handleWrongTap(
+                    'garden_shovel',
+                    pos,
+                    isDistractor: false,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          const ids = ['moon', 'star', 'gem', 'planet'];
+          const emojis = ['🌙', '⭐', '💎', '🪐'];
+          final positions = [
+            Offset(w * 0.20, h * 0.42),
+            Offset(w * 0.64, h * 0.42),
+            Offset(w * 0.20, h * 0.67),
+            Offset(w * 0.64, h * 0.67),
+          ];
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                top: h * 0.17,
+                left: 30,
+                right: 30,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 350),
+                  opacity: 1,
+                  child: GlassmorphicContainer(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    borderRadius: 18,
+                    color: const Color(0xFF25214F).withValues(alpha: 0.88),
+                    borderColor: AppColors.accentPurple.withValues(alpha: 0.5),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Row(
+                        key: ValueKey(_memorySequenceVisible),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: _memorySequence
+                            .map(
+                              (id) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                ),
+                                child: Text(
+                                  _memorySequenceVisible
+                                      ? emojis[ids.indexOf(id)]
+                                      : '•',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(
+                                      alpha: _memorySequenceVisible ? 1 : 0.5,
+                                    ),
+                                    fontSize: _memorySequenceVisible ? 27 : 34,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              for (int index = 0; index < _memorySequence.length; index++)
+                Positioned(
+                  left: positions[index].dx,
+                  top: positions[index].dy,
+                  child: _buildTappableObject(
+                    id: ids[index],
+                    emoji: emojis[index],
+                    label: ids[index],
+                    isGlowing:
+                        _memorySequenceVisible &&
+                        _memoryStep < _memorySequence.length &&
+                        _memorySequence[_memoryStep] == ids[index],
+                    glowColor: AppColors.accentPurple,
+                    onTap: (pos) => _handleMemoryTap(ids[index], pos),
+                  ),
+                ),
+              Positioned(
+                bottom: 42,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_memorySequence.length, (index) {
+                    final completed = index < _memoryStep;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      width: completed ? 24 : 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: completed
+                            ? AppColors.secondary
+                            : Colors.white.withValues(alpha: 0.28),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    );
+                  }),
                 ),
               ),
             ],
@@ -1653,6 +2028,39 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
 
     return Stack(children: activeDistractors);
   }
+}
+
+class _MemoryGridPainter extends CustomPainter {
+  final double pulse;
+
+  const _MemoryGridPainter(this.pulse);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = AppColors.accentPurple.withValues(alpha: 0.07 + pulse * 0.04)
+      ..strokeWidth = 1;
+    const spacing = 38.0;
+    for (double x = 0; x <= size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y <= size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final glowPaint = Paint()
+      ..color = AppColors.secondary.withValues(alpha: 0.08 + pulse * 0.08)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.42),
+      90 + pulse * 18,
+      glowPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MemoryGridPainter oldDelegate) =>
+      oldDelegate.pulse != pulse;
 }
 
 // Particle representation

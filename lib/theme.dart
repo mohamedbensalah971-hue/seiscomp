@@ -36,57 +36,50 @@ class AppColors {
 }
 
 class AppTextStyles {
-  static TextStyle displayLarge(BuildContext context) =>
-      GoogleFonts.outfit(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-        letterSpacing: 0.5,
-      );
+  static TextStyle displayLarge(BuildContext context) => GoogleFonts.outfit(
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: AppColors.textPrimary,
+    letterSpacing: 0.5,
+  );
 
-  static TextStyle displayMedium(BuildContext context) =>
-      GoogleFonts.outfit(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-        letterSpacing: 0.2,
-      );
+  static TextStyle displayMedium(BuildContext context) => GoogleFonts.outfit(
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    color: AppColors.textPrimary,
+    letterSpacing: 0.2,
+  );
 
-  static TextStyle displaySmall(BuildContext context) =>
-      GoogleFonts.outfit(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-      );
+  static TextStyle displaySmall(BuildContext context) => GoogleFonts.outfit(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: AppColors.textPrimary,
+  );
 
-  static TextStyle bodyLarge(BuildContext context) =>
-      GoogleFonts.nunito(
-        fontSize: 18,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textPrimary,
-      );
+  static TextStyle bodyLarge(BuildContext context) => GoogleFonts.nunito(
+    fontSize: 18,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textPrimary,
+  );
 
-  static TextStyle bodyMedium(BuildContext context) =>
-      GoogleFonts.nunito(
-        fontSize: 16,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textSecondary,
-      );
+  static TextStyle bodyMedium(BuildContext context) => GoogleFonts.nunito(
+    fontSize: 16,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textSecondary,
+  );
 
-  static TextStyle bodySmall(BuildContext context) =>
-      GoogleFonts.nunito(
-        fontSize: 14,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textMuted,
-      );
+  static TextStyle bodySmall(BuildContext context) => GoogleFonts.nunito(
+    fontSize: 14,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMuted,
+  );
 
-  static TextStyle button(BuildContext context) =>
-      GoogleFonts.nunito(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-        letterSpacing: 0.8,
-      );
+  static TextStyle button(BuildContext context) => GoogleFonts.nunito(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+    letterSpacing: 0.8,
+  );
 
   static const String fontDisplay = 'Outfit';
   static const String fontBody = 'Nunito';
@@ -247,9 +240,10 @@ class _GlowButtonState extends State<GlowButton>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override

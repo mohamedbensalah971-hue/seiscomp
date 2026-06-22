@@ -15,6 +15,8 @@ class SessionIndicatorScores {
     required this.planning,
     required this.memory,
   });
+
+  double get overall => (attention + impulseControl + planning + memory) / 4.0;
 }
 
 /// Builds a lightweight, positive gameplay profile from recent local sessions.
@@ -41,14 +43,46 @@ class ProfileUpdater {
       consecutiveFailures++;
     }
 
+    int successStreak = 0;
+    for (final session in chronological.reversed) {
+      if (!session.completed) break;
+      successStreak++;
+    }
+
+    final attention = _weightedAverage(
+      scores.map((score) => score.attention).toList(),
+    );
+    final impulse = _weightedAverage(
+      scores.map((score) => score.impulseControl).toList(),
+    );
+    final planning = _weightedAverage(
+      scores.map((score) => score.planning).toList(),
+    );
+    final memory = _weightedAverage(
+      scores.map((score) => score.memory).toList(),
+    );
+    final skills = <String, double>{
+      'attention': attention,
+      'impulse_control': impulse,
+      'planning': planning,
+      'memory': memory,
+    };
+    final strongestSkill = skills.entries
+        .reduce((a, b) => a.value >= b.value ? a : b)
+        .key;
+    final growthFocus = skills.entries
+        .reduce((a, b) => a.value <= b.value ? a : b)
+        .key;
+    final engagement = _weightedAverage(
+      recent.map(_engagementForSession).toList(),
+    );
+
     return BehavioralProfile(
       childId: childId,
-      attentionScore: _average(scores.map((score) => score.attention)),
-      impulseControlScore: _average(
-        scores.map((score) => score.impulseControl),
-      ),
-      planningScore: _average(scores.map((score) => score.planning)),
-      memoryScore: _average(scores.map((score) => score.memory)),
+      attentionScore: attention,
+      impulseControlScore: impulse,
+      planningScore: planning,
+      memoryScore: memory,
       averageReactionTimeSeconds: reactionTimes.isEmpty
           ? 2
           : _roundOne(
@@ -57,6 +91,11 @@ class ProfileUpdater {
       attentionVariability: _roundTwo(
         BehaviorAnalyzer.standardDeviation(reactionTimes),
       ),
+      engagementScore: engagement,
+      overallTrend: _trendFor(scores),
+      strongestSkill: strongestSkill,
+      growthFocus: growthFocus,
+      successStreak: successStreak,
       currentDifficulty: chronological.last.difficultyLevel.clamp(1, 5),
       totalMissions: chronological.length,
       consecutiveFailures: consecutiveFailures,
@@ -107,9 +146,37 @@ class ProfileUpdater {
     );
   }
 
-  static double _average(Iterable<double> values) {
-    final list = values.toList();
-    return (list.reduce((a, b) => a + b) / list.length).roundToDouble();
+  static double _weightedAverage(List<double> values) {
+    if (values.isEmpty) return 70;
+    double weightedTotal = 0;
+    double totalWeight = 0;
+    for (int index = 0; index < values.length; index++) {
+      final weight = (index + 1).toDouble();
+      weightedTotal += values[index] * weight;
+      totalWeight += weight;
+    }
+    return (weightedTotal / totalWeight).roundToDouble();
+  }
+
+  static double _engagementForSession(SessionResult session) {
+    double score = session.completed ? 78 : 52;
+    score += session.starsEarned * 5;
+    score -= min(18, session.hintsUsed * 4);
+    if (session.totalClicks > 0) score += 4;
+    return _clampScore(score);
+  }
+
+  static String _trendFor(List<SessionIndicatorScores> scores) {
+    if (scores.length < 4) return 'steady';
+    final split = scores.length ~/ 2;
+    final earlier = scores.take(split).map((score) => score.overall).toList();
+    final recent = scores.skip(split).map((score) => score.overall).toList();
+    final earlierAverage = earlier.reduce((a, b) => a + b) / earlier.length;
+    final recentAverage = recent.reduce((a, b) => a + b) / recent.length;
+    final delta = recentAverage - earlierAverage;
+    if (delta >= 4) return 'improving';
+    if (delta <= -5) return 'needs_support';
+    return 'steady';
   }
 
   static double _clampScore(num score) =>

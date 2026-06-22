@@ -12,13 +12,14 @@ SessionResult session({
   int hints = 0,
   double reactionMs = 800,
   double completionSeconds = 10,
+  DateTime? timestamp,
   List<GameplayEvent> events = const [],
 }) {
   return SessionResult(
     id: id,
     childId: 'child',
     missionId: 'dark_room',
-    timestamp: DateTime(2026, 6, 22),
+    timestamp: timestamp ?? DateTime(2026, 6, 22),
     difficultyLevel: difficulty,
     completionTimeSeconds: completionSeconds,
     starsEarned: completed ? 3 : 0,
@@ -136,6 +137,66 @@ void main() {
       expect(profile.totalMissions, 2);
       expect(profile.consecutiveFailures, 1);
     });
+
+    test('recent improvement drives trend, engagement, and success streak', () {
+      final sessions = [
+        session(
+          id: 'old-1',
+          completed: false,
+          wrong: 5,
+          distractors: 4,
+          hints: 2,
+          timestamp: DateTime(2026, 6, 1),
+        ),
+        session(
+          id: 'old-2',
+          wrong: 4,
+          distractors: 3,
+          hints: 2,
+          timestamp: DateTime(2026, 6, 2),
+        ),
+        session(id: 'new-1', timestamp: DateTime(2026, 6, 3)),
+        session(id: 'new-2', timestamp: DateTime(2026, 6, 4)),
+      ];
+
+      final profile = LocalAIEngine.instance.buildBehavioralProfile(
+        'child',
+        sessions,
+      );
+
+      expect(profile.overallTrend, 'improving');
+      expect(profile.engagementScore, inInclusiveRange(0, 100));
+      expect(profile.successStreak, 3);
+      expect(profile.strongestSkill, isNotEmpty);
+      expect(profile.growthFocus, isNotEmpty);
+    });
+
+    test('model confidence grows as local evidence accumulates', () {
+      final first = session(id: 'first');
+      final history = List.generate(
+        6,
+        (index) => session(
+          id: 'history-$index',
+          timestamp: DateTime(2026, 6, index + 1),
+        ),
+      );
+
+      final earlyDecision = LocalAIEngine.instance.getAdaptation(
+        childId: 'child',
+        currentMissionId: 'dark_room',
+        currentSession: first,
+        history: [first],
+      );
+      final matureDecision = LocalAIEngine.instance.getAdaptation(
+        childId: 'child',
+        currentMissionId: 'dark_room',
+        currentSession: history.last,
+        history: history,
+      );
+
+      expect(matureDecision.confidence, greaterThan(earlyDecision.confidence));
+      expect(matureDecision.focusSkill, isNotEmpty);
+    });
   });
 
   test('mission factory follows the five documented difficulty rows', () {
@@ -155,5 +216,11 @@ void main() {
       expect(config.timeLimitSeconds, row.$3);
       expect(config.hintLevel, row.$4);
     }
+  });
+
+  test('mission journey includes garden and memory levels', () {
+    expect(MissionFactory.nextMissionAfter('door_room'), 'garden_room');
+    expect(MissionFactory.nextMissionAfter('garden_room'), 'memory_vault');
+    expect(MissionFactory.nextMissionAfter('memory_vault'), 'dark_room');
   });
 }

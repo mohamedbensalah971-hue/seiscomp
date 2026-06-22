@@ -21,6 +21,7 @@ class DecisionEngine {
     late final String reasonEn;
     late final String reasonFr;
     late final String reasonAr;
+    late final String focusSkill;
     bool recommendCalm = false;
 
     if (!metrics.completed || profile.consecutiveFailures >= 2) {
@@ -34,6 +35,7 @@ class DecisionEngine {
       );
       recommendedMissionId = 'dark_room';
       distractorLevel = 'reduced';
+      focusSkill = 'attention';
       recommendCalm = true;
       reasonEn =
           'The next quest is shorter and calmer, with earlier hints, so the child can rebuild momentum.';
@@ -52,6 +54,7 @@ class DecisionEngine {
       );
       recommendedMissionId = 'dark_room';
       distractorLevel = 'reduced';
+      focusSkill = 'attention';
       reasonEn =
           'Several distractors were tapped, so the next focus quest uses fewer and slower visual distractions.';
       reasonFr =
@@ -68,6 +71,7 @@ class DecisionEngine {
       );
       recommendedMissionId = 'robot_room';
       distractorLevel = 'normal';
+      focusSkill = 'impulse_control';
       reasonEn =
           'The next quest adds a short look-before-tapping pause and more time for careful planning.';
       reasonFr =
@@ -79,7 +83,8 @@ class DecisionEngine {
       nextDifficulty = MissionFactory.forLevel(
         currentLevel,
       ).copyWith(hintLevel: 'high', hintDelaySeconds: 6);
-      recommendedMissionId = currentMissionId;
+      focusSkill = profile.growthFocus;
+      recommendedMissionId = _missionForSkill(focusSkill);
       distractorLevel = 'normal';
       reasonEn =
           'The next puzzle keeps the level steady and offers progressive hints a little earlier.';
@@ -95,6 +100,7 @@ class DecisionEngine {
       nextDifficulty = MissionFactory.forLevel(min(5, currentLevel + 1));
       recommendedMissionId = MissionFactory.nextMissionAfter(currentMissionId);
       distractorLevel = 'increased';
+      focusSkill = profile.growthFocus;
       reasonEn =
           'The puzzle was completed accurately without hints, so the next quest increases difficulty by one step.';
       reasonFr =
@@ -104,7 +110,10 @@ class DecisionEngine {
     } else {
       missionType = 'balanced_puzzle';
       nextDifficulty = MissionFactory.forLevel(currentLevel);
-      recommendedMissionId = MissionFactory.nextMissionAfter(currentMissionId);
+      focusSkill = profile.growthFocus;
+      recommendedMissionId = profile.totalMissions < 2
+          ? MissionFactory.nextMissionAfter(currentMissionId)
+          : _missionForSkill(focusSkill);
       distractorLevel = 'normal';
       reasonEn =
           'Performance was balanced, so the next quest keeps the same difficulty with normal support.';
@@ -115,6 +124,7 @@ class DecisionEngine {
     }
 
     final support = _supportMessages(missionType);
+    final confidence = min(0.96, 0.46 + profile.totalMissions * 0.07);
     return AIAdaptation(
       metrics: metrics,
       updatedProfile: profile,
@@ -129,9 +139,19 @@ class DecisionEngine {
       supportMessageEn: support.$1,
       supportMessageFr: support.$2,
       supportMessageAr: support.$3,
+      confidence: double.parse(confidence.toStringAsFixed(2)),
+      focusSkill: focusSkill,
       recommendCalmPuzzle: recommendCalm,
     );
   }
+
+  static String _missionForSkill(String skill) => switch (skill) {
+    'attention' => 'dark_room',
+    'impulse_control' => 'robot_room',
+    'planning' => 'garden_room',
+    'memory' => 'memory_vault',
+    _ => 'door_room',
+  };
 
   static (String, String, String) _supportMessages(String missionType) {
     return switch (missionType) {

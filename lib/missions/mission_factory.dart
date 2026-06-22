@@ -55,6 +55,8 @@ class MissionFactory {
       switch (currentMissionId) {
         'dark_room' => 'robot_room',
         'robot_room' => 'door_room',
+        'door_room' => 'garden_room',
+        'garden_room' => 'memory_vault',
         _ => 'dark_room',
       };
 }

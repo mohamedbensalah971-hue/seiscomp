@@ -291,6 +291,11 @@ class BehavioralProfile {
   final double memoryScore;
   final double averageReactionTimeSeconds;
   final double attentionVariability;
+  final double engagementScore;
+  final String overallTrend;
+  final String strongestSkill;
+  final String growthFocus;
+  final int successStreak;
   final int currentDifficulty;
   final int totalMissions;
   final int consecutiveFailures;
@@ -303,6 +308,11 @@ class BehavioralProfile {
     required this.memoryScore,
     required this.averageReactionTimeSeconds,
     required this.attentionVariability,
+    required this.engagementScore,
+    required this.overallTrend,
+    required this.strongestSkill,
+    required this.growthFocus,
+    required this.successStreak,
     required this.currentDifficulty,
     required this.totalMissions,
     required this.consecutiveFailures,
@@ -316,6 +326,11 @@ class BehavioralProfile {
     memoryScore: 70,
     averageReactionTimeSeconds: 2,
     attentionVariability: 0,
+    engagementScore: 70,
+    overallTrend: 'steady',
+    strongestSkill: 'attention',
+    growthFocus: 'planning',
+    successStreak: 0,
     currentDifficulty: 2,
     totalMissions: 0,
     consecutiveFailures: 0,
@@ -329,6 +344,11 @@ class BehavioralProfile {
     'memoryScore': memoryScore,
     'averageReactionTimeSeconds': averageReactionTimeSeconds,
     'attentionVariability': attentionVariability,
+    'engagementScore': engagementScore,
+    'overallTrend': overallTrend,
+    'strongestSkill': strongestSkill,
+    'growthFocus': growthFocus,
+    'successStreak': successStreak,
     'currentDifficulty': currentDifficulty,
     'totalMissions': totalMissions,
     'consecutiveFailures': consecutiveFailures,
@@ -344,6 +364,11 @@ class BehavioralProfile {
       averageReactionTimeSeconds: (map['averageReactionTimeSeconds'] ?? 2)
           .toDouble(),
       attentionVariability: (map['attentionVariability'] ?? 0).toDouble(),
+      engagementScore: (map['engagementScore'] ?? 70).toDouble(),
+      overallTrend: map['overallTrend'] ?? 'steady',
+      strongestSkill: map['strongestSkill'] ?? 'attention',
+      growthFocus: map['growthFocus'] ?? 'planning',
+      successStreak: map['successStreak'] ?? 0,
       currentDifficulty: map['currentDifficulty'] ?? 2,
       totalMissions: map['totalMissions'] ?? 0,
       consecutiveFailures: map['consecutiveFailures'] ?? 0,
@@ -449,6 +474,8 @@ class AIAdaptation {
   final String supportMessageEn;
   final String supportMessageFr;
   final String supportMessageAr;
+  final double confidence;
+  final String focusSkill;
   final bool recommendCalmPuzzle;
 
   const AIAdaptation({
@@ -465,6 +492,8 @@ class AIAdaptation {
     required this.supportMessageEn,
     required this.supportMessageFr,
     required this.supportMessageAr,
+    required this.confidence,
+    required this.focusSkill,
     this.recommendCalmPuzzle = false,
   });
 

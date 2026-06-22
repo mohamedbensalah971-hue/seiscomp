@@ -73,6 +73,12 @@ class AppState extends ChangeNotifier {
   String _lastDecisionReason = 'The first quest begins with balanced support.';
   String get lastDecisionReason => _lastDecisionReason;
 
+  double _lastDecisionConfidence = 0.46;
+  double get lastDecisionConfidence => _lastDecisionConfidence;
+
+  String _lastFocusSkill = 'attention';
+  String get lastFocusSkill => _lastFocusSkill;
+
   AIAgentService _aiAgent = LocalAIEngine.instance;
   AIAgentService get aiAgent => _aiAgent;
 
@@ -286,6 +292,17 @@ class AppState extends ChangeNotifier {
       'last_decision_type_${_selectedProfile!.id}',
       defaultValue: 'balanced_puzzle',
     );
+    _lastDecisionConfidence =
+        (_settingsBox.get(
+                  'last_decision_confidence_${_selectedProfile!.id}',
+                  defaultValue: 0.46,
+                )
+                as num)
+            .toDouble();
+    _lastFocusSkill = _settingsBox.get(
+      'last_focus_skill_${_selectedProfile!.id}',
+      defaultValue: _behavioralProfile.growthFocus,
+    );
 
     // Load last support message
     String langCode = _language == 'fr'
@@ -361,6 +378,8 @@ class AppState extends ChangeNotifier {
     _recommendedMissionId = adaptation.recommendedMissionId;
     _behavioralProfile = adaptation.updatedProfile;
     _lastDecisionType = adaptation.missionType;
+    _lastDecisionConfidence = adaptation.confidence;
+    _lastFocusSkill = adaptation.focusSkill;
 
     await _settingsBox.put(
       'difficulty_${_selectedProfile!.id}',
@@ -377,6 +396,14 @@ class AppState extends ChangeNotifier {
     await _settingsBox.put(
       'last_decision_type_${_selectedProfile!.id}',
       _lastDecisionType,
+    );
+    await _settingsBox.put(
+      'last_decision_confidence_${_selectedProfile!.id}',
+      _lastDecisionConfidence,
+    );
+    await _settingsBox.put(
+      'last_focus_skill_${_selectedProfile!.id}',
+      _lastFocusSkill,
     );
 
     // Save feedback messages in all languages
@@ -482,6 +509,8 @@ class AppState extends ChangeNotifier {
     _behavioralProfile = BehavioralProfile.empty('');
     _lastDecisionType = 'balanced_puzzle';
     _lastDecisionReason = 'The first quest begins with balanced support.';
+    _lastDecisionConfidence = 0.46;
+    _lastFocusSkill = 'attention';
     _lastFeedbackMessage = "Let's explore your first puzzle room!";
 
     notifyListeners();

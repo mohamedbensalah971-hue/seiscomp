@@ -96,7 +96,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               // Top Bar Language Select
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -105,9 +108,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       underline: Container(),
                       value: lang,
                       items: const [
-                        DropdownMenuItem(value: 'en', child: Text('🇬🇧 English', style: TextStyle(color: AppColors.textPrimary))),
-                        DropdownMenuItem(value: 'fr', child: Text('🇫🇷 Français', style: TextStyle(color: AppColors.textPrimary))),
-                        DropdownMenuItem(value: 'ar', child: Text('🇸🇦 العربية', style: TextStyle(color: AppColors.textPrimary))),
+                        DropdownMenuItem(
+                          value: 'en',
+                          child: Text(
+                            '🇬🇧 English',
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fr',
+                          child: Text(
+                            '🇫🇷 Français',
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ar',
+                          child: Text(
+                            '🇸🇦 العربية',
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) appState.setLanguage(val);
@@ -146,7 +167,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         onPressed: _onBack,
                         child: Text(
                           AppLocalizations.get('back', lang),
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                          ),
                         ),
                       )
                     else
@@ -161,7 +185,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 8.0,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(4.0),
-                            color: _currentPage == idx ? AppColors.secondary : AppColors.textMuted,
+                            color: _currentPage == idx
+                                ? AppColors.secondary
+                                : AppColors.textMuted,
                           ),
                         );
                       }),
@@ -172,28 +198,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                         ),
                         onPressed: _onNext,
                         child: Text(
                           AppLocalizations.get('next', lang),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       )
                     else
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: (_consentChecked && _pinCode.length == 4) 
-                              ? AppColors.secondary 
+                          backgroundColor:
+                              (_consentChecked && _pinCode.length == 4)
+                              ? AppColors.secondary
                               : AppColors.textMuted,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                         ),
-                        onPressed: (_consentChecked && _pinCode.length == 4) ? _completeSetupAction : null,
+                        onPressed: (_consentChecked && _pinCode.length == 4)
+                            ? _completeSetupAction
+                            : null,
                         child: Text(
                           AppLocalizations.get('get_started', lang),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                   ],
@@ -223,7 +270,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: item.glowColor.withValues(alpha: 0.1),
-              border: Border.all(color: item.glowColor.withValues(alpha: 0.3), width: 2),
+              border: Border.all(
+                color: item.glowColor.withValues(alpha: 0.3),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: item.glowColor.withValues(alpha: 0.2),
@@ -232,11 +282,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ],
             ),
-            child: Icon(
-              item.icon,
-              size: 80,
-              color: item.glowColor,
-            ),
+            child: Icon(item.icon, size: 80, color: item.glowColor),
           ),
           const SizedBox(height: 48),
 
@@ -249,7 +295,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           Text(
             AppLocalizations.get(item.subKey, lang),
-            style: AppTextStyles.bodyLarge(context).copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyLarge(
+              context,
+            ).copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -277,7 +325,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.security, color: AppColors.secondary, size: 28),
+                    const Icon(
+                      Icons.security,
+                      color: AppColors.secondary,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       AppLocalizations.get('parent_consent_title', lang),
@@ -294,7 +346,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 CheckboxListTile(
                   title: Text(
                     AppLocalizations.get('parent_consent_check', lang),
-                    style: AppTextStyles.bodyMedium(context).copyWith(color: AppColors.textPrimary),
+                    style: AppTextStyles.bodyMedium(
+                      context,
+                    ).copyWith(color: AppColors.textPrimary),
                   ),
                   activeColor: AppColors.primary,
                   checkColor: Colors.white,
@@ -326,7 +380,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   style: AppTextStyles.bodySmall(context),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // PIN dots indicators
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -338,9 +392,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       height: 20,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isFilled ? AppColors.primary : Colors.transparent,
+                        color: isFilled
+                            ? AppColors.primary
+                            : Colors.transparent,
                         border: Border.all(
-                          color: isFilled ? AppColors.primaryLight : AppColors.textMuted,
+                          color: isFilled
+                              ? AppColors.primaryLight
+                              : AppColors.textMuted,
                           width: 2,
                         ),
                       ),
@@ -400,7 +458,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: AppColors.textPrimary.withValues(alpha: 0.06),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                ),
               ),
               child: Text(
                 label,
