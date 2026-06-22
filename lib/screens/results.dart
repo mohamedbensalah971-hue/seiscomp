@@ -22,8 +22,10 @@ class _ResultsScreenState extends State<ResultsScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  final List<ConfettiParticle> _confetti =
-      List.generate(80, (index) => ConfettiParticle());
+  final List<ConfettiParticle> _confetti = List.generate(
+    80,
+    (index) => ConfettiParticle(),
+  );
 
   @override
   void initState() {
@@ -93,7 +95,9 @@ class _ResultsScreenState extends State<ResultsScreen>
                 opacity: _fadeAnimation,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0, vertical: 24.0),
+                    horizontal: 24.0,
+                    vertical: 24.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -106,14 +110,16 @@ class _ResultsScreenState extends State<ResultsScreen>
                             : AppLocalizations.get('keep_trying', lang),
                         style: AppTextStyles.displayLarge(context).copyWith(
                           color: isCompleted
-                              ? AppColors.accentYellow
-                              : Colors.white,
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                           shadows: isCompleted
                               ? [
-                                  const Shadow(
-                                    color: AppColors.accentYellow,
-                                    blurRadius: 20,
-                                  )
+                                  Shadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    blurRadius: 12,
+                                  ),
                                 ]
                               : null,
                         ),
@@ -127,8 +133,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                         child: GlassmorphicContainer(
                           padding: const EdgeInsets.all(24),
                           borderColor: isCompleted
-                              ? AppColors.accentYellow
-                                  .withValues(alpha: 0.4)
+                              ? AppColors.accentYellow.withValues(alpha: 0.4)
                               : AppColors.textMuted.withValues(alpha: 0.2),
                           color: isCompleted
                               ? AppColors.accentYellow.withValues(alpha: 0.06)
@@ -141,10 +146,13 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 children: List.generate(3, (idx) {
                                   final bool isFilled = idx < res.starsEarned;
                                   return TweenAnimationBuilder<double>(
-                                    tween:
-                                        Tween(begin: 0.0, end: isFilled ? 1.0 : 0.0),
+                                    tween: Tween(
+                                      begin: 0.0,
+                                      end: isFilled ? 1.0 : 0.0,
+                                    ),
                                     duration: Duration(
-                                        milliseconds: 400 + idx * 200),
+                                      milliseconds: 400 + idx * 200,
+                                    ),
                                     curve: Curves.elasticOut,
                                     builder: (context, val, child) {
                                       return Transform.scale(
@@ -153,17 +161,21 @@ class _ResultsScreenState extends State<ResultsScreen>
                                       );
                                     },
                                     child: Icon(
-                                      isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
+                                      isFilled
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
                                       size: 70,
                                       color: isFilled
-                                          ? AppColors.accentYellow
-                                          : Colors.white12,
+                                          ? const Color(0xFFE0A20A)
+                                          : AppColors.textMuted.withValues(
+                                              alpha: 0.35,
+                                            ),
                                       shadows: isFilled
                                           ? [
                                               const Shadow(
                                                 color: AppColors.accentYellow,
                                                 blurRadius: 20,
-                                              )
+                                              ),
                                             ]
                                           : null,
                                     ),
@@ -175,7 +187,9 @@ class _ResultsScreenState extends State<ResultsScreen>
                               // Mission name
                               Text(
                                 AppLocalizations.get(
-                                    '${res.missionId}_title', lang),
+                                  '${res.missionId}_title',
+                                  lang,
+                                ),
                                 style: AppTextStyles.displayMedium(context),
                                 textAlign: TextAlign.center,
                               ),
@@ -184,12 +198,16 @@ class _ResultsScreenState extends State<ResultsScreen>
                               Text(
                                 isCompleted
                                     ? AppLocalizations.get(
-                                        'congratulations', lang)
+                                        'congratulations',
+                                        lang,
+                                      )
                                     : AppLocalizations.get(
-                                        'practice_message', lang),
+                                        'practice_message',
+                                        lang,
+                                      ),
                                 style: GoogleFonts.nunito(
                                   color: isCompleted
-                                      ? AppColors.secondaryLight
+                                      ? AppColors.accentGreen
                                       : AppColors.textSecondary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -197,7 +215,11 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 20),
-                              const Divider(color: Colors.white10),
+                              Divider(
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
+                              ),
                               const SizedBox(height: 12),
 
                               // Metrics
@@ -212,19 +234,34 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 '${res.hintsUsed}',
                               ),
                               _buildStatRow(
+                                Icons.bolt_rounded,
+                                AppLocalizations.get('reaction_time', lang),
+                                '${(res.reactionTimeMs / 1000).toStringAsFixed(1)} ${AppLocalizations.get('seconds', lang)}',
+                              ),
+                              _buildStatRow(
+                                Icons.auto_awesome_motion_rounded,
+                                AppLocalizations.get('distractor_clicks', lang),
+                                '${res.distractorClicks}',
+                              ),
+                              _buildStatRow(
                                 Icons.ads_click_rounded,
                                 AppLocalizations.get('accuracy', lang),
                                 res.wrongClicks == 0 &&
                                         res.distractorClicks == 0
                                     ? AppLocalizations.get(
-                                        'accuracy_great', lang)
-                                    : (res.wrongClicks +
-                                                res.distractorClicks <
-                                            4
-                                        ? AppLocalizations.get(
-                                            'accuracy_good', lang)
-                                        : AppLocalizations.get(
-                                            'accuracy_practice', lang)),
+                                        'accuracy_great',
+                                        lang,
+                                      )
+                                    : (res.wrongClicks + res.distractorClicks <
+                                              4
+                                          ? AppLocalizations.get(
+                                              'accuracy_good',
+                                              lang,
+                                            )
+                                          : AppLocalizations.get(
+                                              'accuracy_practice',
+                                              lang,
+                                            )),
                               ),
                               const SizedBox(height: 16),
 
@@ -232,34 +269,48 @@ class _ResultsScreenState extends State<ResultsScreen>
                               if (isCompleted)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 14),
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        AppColors.primary
-                                            .withValues(alpha: 0.15),
-                                        AppColors.accentPurple
-                                            .withValues(alpha: 0.1),
+                                        AppColors.primary.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        AppColors.accentPurple.withValues(
+                                          alpha: 0.1,
+                                        ),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.3)),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceAround,
                                     children: [
-                                      _buildRewardChip(Icons.star_rounded,
-                                          '+${res.starsEarned}', AppColors.accentYellow),
+                                      _buildRewardChip(
+                                        Icons.star_rounded,
+                                        '+${res.starsEarned}',
+                                        AppColors.accentYellow,
+                                      ),
                                       Container(
                                         width: 1,
                                         height: 32,
-                                        color: Colors.white10,
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
                                       ),
-                                      _buildRewardChip(Icons.diamond_rounded,
-                                          '+${res.gemsEarned}', AppColors.secondary),
+                                      _buildRewardChip(
+                                        Icons.diamond_rounded,
+                                        '+${res.gemsEarned}',
+                                        AppColors.secondary,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -269,49 +320,93 @@ class _ResultsScreenState extends State<ResultsScreen>
                       ),
                       const SizedBox(height: 20),
 
-                      // --- AI Feedback Card ---
+                      // --- Explainable AI decision card ---
                       GlassmorphicContainer(
                         padding: const EdgeInsets.all(16),
-                        borderColor:
-                            AppColors.primary.withValues(alpha: 0.3),
+                        borderColor: AppColors.primary.withValues(alpha: 0.3),
                         color: AppColors.primary.withValues(alpha: 0.05),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.15),
-                              ),
-                              child: const Icon(Icons.psychology_outlined,
-                                  color: AppColors.secondary, size: 28),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.psychology_outlined,
+                                    color: AppColors.secondary,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        AppLocalizations.get(
+                                          'agent_adapted',
+                                          lang,
+                                        ),
+                                        style: GoogleFonts.outfit(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        AppLocalizations.get(
+                                          'decision_${appState.lastDecisionType}',
+                                          lang,
+                                        ),
+                                        style: GoogleFonts.nunito(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.get('suggestion', lang),
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    appState.lastFeedbackMessage,
-                                    style: GoogleFonts.nunito(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 13,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 12),
+                            Text(
+                              appState.lastDecisionReason,
+                              style: GoogleFonts.nunito(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                height: 1.5,
                               ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildDecisionChip(
+                                  Icons.route_rounded,
+                                  AppLocalizations.get(
+                                    '${appState.recommendedMissionId}_title',
+                                    lang,
+                                  ),
+                                ),
+                                _buildDecisionChip(
+                                  Icons.tune_rounded,
+                                  '${AppLocalizations.get('level', lang)} ${appState.currentDifficulty.difficultyLevel}',
+                                ),
+                                _buildDecisionChip(
+                                  Icons.timer_outlined,
+                                  '${appState.currentDifficulty.timeLimitSeconds} ${AppLocalizations.get('seconds', lang)}',
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -325,12 +420,13 @@ class _ResultsScreenState extends State<ResultsScreen>
                           icon: Icons.map_rounded,
                           colors: const [
                             AppColors.secondary,
-                            AppColors.accentGreen
+                            AppColors.accentGreen,
                           ],
                           onPressed: () {
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                  builder: (_) => const WorldMapScreen()),
+                                builder: (_) => const WorldMapScreen(),
+                              ),
                               (route) => false,
                             );
                           },
@@ -339,16 +435,19 @@ class _ResultsScreenState extends State<ResultsScreen>
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(
-                                color: AppColors.primary, width: 1.5),
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                             minimumSize: const Size(double.infinity, 50),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                           onPressed: () {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (_) => PuzzleGameScreen(
-                                    missionId: res.missionId),
+                                builder: (_) =>
+                                    PuzzleGameScreen(missionId: res.missionId),
                               ),
                             );
                           },
@@ -365,12 +464,15 @@ class _ResultsScreenState extends State<ResultsScreen>
                         GlowButton(
                           label: AppLocalizations.get('try_again', lang),
                           icon: Icons.refresh_rounded,
-                          colors: const [AppColors.primary, AppColors.accentPurple],
+                          colors: const [
+                            AppColors.primary,
+                            AppColors.accentPurple,
+                          ],
                           onPressed: () {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (_) => PuzzleGameScreen(
-                                    missionId: res.missionId),
+                                builder: (_) =>
+                                    PuzzleGameScreen(missionId: res.missionId),
                               ),
                             );
                           },
@@ -380,14 +482,17 @@ class _ResultsScreenState extends State<ResultsScreen>
                           onPressed: () {
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                  builder: (_) => const WorldMapScreen()),
+                                builder: (_) => const WorldMapScreen(),
+                              ),
                               (route) => false,
                             );
                           },
                           child: Text(
                             AppLocalizations.get('back_to_map', lang),
                             style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 15),
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ],
@@ -413,17 +518,49 @@ class _ResultsScreenState extends State<ResultsScreen>
             children: [
               Icon(icon, color: AppColors.textSecondary, size: 18),
               const SizedBox(width: 8),
-              Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 14)),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
-          Text(value,
-              style: GoogleFonts.nunito(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              )),
+          Text(
+            value,
+            style: GoogleFonts.nunito(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDecisionChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.secondary, size: 15),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -499,7 +636,10 @@ class ConfettiPainter extends CustomPainter {
       canvas.rotate(p.rotation);
       canvas.drawRect(
         Rect.fromCenter(
-            center: Offset.zero, width: p.size, height: p.size * 0.5),
+          center: Offset.zero,
+          width: p.size,
+          height: p.size * 0.5,
+        ),
         paint,
       );
       canvas.restore();

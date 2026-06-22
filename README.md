@@ -1,16 +1,38 @@
-# mindspark_quest
+# MindSpark Quest
 
-A new Flutter project.
+MindSpark Quest is an offline-first Flutter puzzle game for children who are
+practising attention, impulse control, planning, and working memory. It is a
+supportive game, not a diagnostic or medical device.
 
-## Getting Started
+## Adaptive agent
 
-This project is a starting point for a Flutter application.
+Each mission records correct, wrong, distractor, and hint events with timing.
+The local explainable agent then:
 
-A few resources to get you started if this is your first Flutter project:
+1. calculates reaction time, useful reaction time, commissions, omissions,
+   hint use, completion time, and recent variability;
+2. updates bounded gameplay indicators for attention, impulse control,
+   planning, and working memory;
+3. applies child-safe rule priority (recovery, focus, impulse control, guided,
+   gradual challenge, or balanced play);
+4. generates the next mission, difficulty, timer, object count, distractors,
+   hint level, optional look-before-tapping pause, and a multilingual reason;
+5. stores the result and profile locally in Hive.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+The agent modules live in `lib/agent/`, mission configuration is produced in
+`lib/missions/`, and the UI consumes the stable contract in
+`lib/ai_interface/ai_agent_service.dart`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Run and verify
+
+```sh
+flutter pub get
+flutter run
+flutter analyze
+flutter test
+```
+
+The minimum demo includes Light Up the Room, Power the Robot, Open the Door,
+adaptive result explanations, a recommended quest on the map, multilingual
+English/French/Arabic UI, accessibility settings, caregiver consent/PIN, and a
+non-diagnostic caregiver dashboard.

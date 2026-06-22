@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mindspark_quest/main.dart';
 import 'package:mindspark_quest/state.dart';
@@ -33,39 +32,43 @@ void main() {
         history: [],
       );
 
-      // Distractors should be adapted downwards
-      expect(adaptation.nextDifficulty.maxDistractors, lessThanOrEqualTo(3));
-      expect(adaptation.recommendedMissionId, equals('robot_room'));
+      expect(adaptation.missionType, equals('focus_training'));
+      expect(adaptation.nextDifficulty.maxDistractors, equals(1));
+      expect(adaptation.distractorLevel, equals('reduced'));
+      expect(adaptation.recommendedMissionId, equals('dark_room'));
     });
 
-    test('calculateAdaptation increases difficulty on flawless performance', () {
-      final currentSession = SessionResult(
-        id: 's2',
-        childId: 'c1',
-        missionId: 'robot_room',
-        timestamp: DateTime.now(),
-        completionTimeSeconds: 8.0, // fast
-        starsEarned: 3,
-        gemsEarned: 2,
-        totalClicks: 2,
-        wrongClicks: 0, // perfect
-        distractorClicks: 0, // flawless focus
-        hintsUsed: 0,
-        reactionTimeMs: 600,
-        events: [],
-      );
+    test(
+      'calculateAdaptation increases difficulty on flawless performance',
+      () {
+        final currentSession = SessionResult(
+          id: 's2',
+          childId: 'c1',
+          missionId: 'robot_room',
+          timestamp: DateTime.now(),
+          completionTimeSeconds: 8.0, // fast
+          starsEarned: 3,
+          gemsEarned: 2,
+          totalClicks: 2,
+          wrongClicks: 0, // perfect
+          distractorClicks: 0, // flawless focus
+          hintsUsed: 0,
+          reactionTimeMs: 600,
+          events: [],
+        );
 
-      final adaptation = LocalAIEngine.instance.getAdaptation(
-        childId: 'c1',
-        currentMissionId: 'robot_room',
-        currentSession: currentSession,
-        history: [],
-      );
+        final adaptation = LocalAIEngine.instance.getAdaptation(
+          childId: 'c1',
+          currentMissionId: 'robot_room',
+          currentSession: currentSession,
+          history: [],
+        );
 
-      expect(adaptation.nextDifficulty.complexityLevel, equals('Hard'));
-      expect(adaptation.nextDifficulty.maxDistractors, greaterThanOrEqualTo(2));
-      expect(adaptation.recommendedMissionId, equals('door_room'));
-    });
+        expect(adaptation.missionType, equals('harder_logic'));
+        expect(adaptation.nextDifficulty.difficultyLevel, equals(3));
+        expect(adaptation.recommendedMissionId, equals('door_room'));
+      },
+    );
 
     test('calculateAdaptation handles failure and requests calm mission', () {
       final currentSession = SessionResult(
@@ -93,6 +96,7 @@ void main() {
 
       expect(adaptation.nextDifficulty.complexityLevel, equals('Easy'));
       expect(adaptation.recommendCalmPuzzle, isTrue);
+      expect(adaptation.missionType, equals('recovery'));
     });
 
     test('computeDashboardMetrics computes correct averages', () {
@@ -126,7 +130,7 @@ void main() {
           hintsUsed: 0,
           reactionTimeMs: 2000,
           events: [],
-        )
+        ),
       ];
 
       final metrics = LocalAIEngine.instance.getDashboardIndicators(sessions);
@@ -135,7 +139,12 @@ void main() {
       expect(metrics['completedMissions'], equals(2));
       expect(metrics['attentionScore'], greaterThan(60));
       expect(metrics['impulseControlScore'], greaterThan(50));
-      expect(metrics['averageReactionTimeSeconds'], equals(1.5)); // average of 1.0 and 2.0s
+      expect(metrics['planningScore'], inInclusiveRange(0, 100));
+      expect(metrics['memoryScore'], inInclusiveRange(0, 100));
+      expect(
+        metrics['averageReactionTimeSeconds'],
+        equals(1.5),
+      ); // average of 1.0 and 2.0s
     });
   });
 

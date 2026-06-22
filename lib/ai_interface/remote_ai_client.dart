@@ -9,6 +9,26 @@ class RemoteAIClient implements AIAgentService {
   RemoteAIClient({required this.baseUrl});
 
   @override
+  MissionMetrics analyzeMission(
+    SessionResult session,
+    List<SessionResult> history,
+  ) {
+    throw UnimplementedError(
+      'Connect RemoteAIClient to the mission analysis endpoint at $baseUrl',
+    );
+  }
+
+  @override
+  BehavioralProfile buildBehavioralProfile(
+    String childId,
+    List<SessionResult> sessions,
+  ) {
+    throw UnimplementedError(
+      'Connect RemoteAIClient to the profile endpoint at $baseUrl',
+    );
+  }
+
+  @override
   AIAdaptation getAdaptation({
     required String childId,
     required String currentMissionId,

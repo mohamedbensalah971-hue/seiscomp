@@ -17,7 +17,8 @@ class PuzzleGameScreen extends StatefulWidget {
   State<PuzzleGameScreen> createState() => _PuzzleGameScreenState();
 }
 
-class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProviderStateMixin {
+class _PuzzleGameScreenState extends State<PuzzleGameScreen>
+    with TickerProviderStateMixin {
   // Gameplay stats tracking
   late DateTime _startTime;
   double? _firstActionTimeMs;
@@ -29,9 +30,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
   // Game lifecycle states
   bool _isPaused = false;
   bool _isCompleted = false;
+  bool _resultSubmitted = false;
   bool _hintActive = false;
+  bool _interactionReady = true;
   String _hintText = "";
-
+  String? _failureNoticeText;
+  Timer? _missionStartTimer;
 
   // Level 1: Dark Room state
   bool _isLit = false;
@@ -54,7 +58,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
   late AnimationController _doorAnimController;
   late Animation<double> _lightAnim;
   late Animation<double> _doorAnim;
-  
+
   // Custom Particle bursts
   final List<LevelParticle> _particles = [];
   Timer? _particleTimer;
@@ -72,13 +76,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
 
     // Accessibility: reduce distractors when parent enabled the setting
     if (appState.reduceDistractors) {
-      _difficulty = DifficultyParams(
+      _difficulty = _difficulty.copyWith(
         maxDistractors: _difficulty.maxDistractors.clamp(0, 1),
         distractorIntensity: 0.1,
-        totalObjects: _difficulty.totalObjects,
-        hintDelaySeconds: _difficulty.hintDelaySeconds,
-        showTimerBar: _difficulty.showTimerBar,
-        complexityLevel: _difficulty.complexityLevel,
       );
     }
 
@@ -87,13 +87,14 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     // Timer limit based on difficulty (soft timer bar count down)
     _timerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 40),
+      duration: Duration(seconds: _difficulty.timeLimitSeconds),
     );
-    _timerController.forward();
     _timerController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_isCompleted) {
         // level timeout or omit
-        _handleLevelFailed();
+        _handleLevelFailed(
+          completionTimeSeconds: _difficulty.timeLimitSeconds.toDouble(),
+        );
       }
     });
 
@@ -138,7 +139,30 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       curve: Curves.easeOutBack,
     );
 
-    // Auto hint check after AI specified delay
+    _startAdaptiveMission();
+  }
+
+  void _startAdaptiveMission() {
+    final wait = _difficulty.waitBeforeInteractionSeconds;
+    if (wait <= 0) {
+      _beginMission();
+      return;
+    }
+
+    _interactionReady = false;
+    _missionStartTimer = Timer(
+      Duration(milliseconds: (wait * 1000).round()),
+      () {
+        if (!mounted) return;
+        setState(() => _interactionReady = true);
+        _beginMission();
+      },
+    );
+  }
+
+  void _beginMission() {
+    _startTime = DateTime.now();
+    _timerController.forward(from: 0);
     Future.delayed(Duration(seconds: _difficulty.hintDelaySeconds.round()), () {
       if (mounted && !_isCompleted && _events.isEmpty) {
         _triggerAutoHint();
@@ -159,6 +183,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     return AppLocalizations.get('hint_${widget.missionId}', lang);
   }
 
+  double get _elapsedSeconds =>
+      DateTime.now().difference(_startTime).inMilliseconds / 1000.0;
+
   @override
   void dispose() {
     _timerController.dispose();
@@ -166,22 +193,32 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     _pulseController.dispose();
     _lightAnimController.dispose();
     _doorAnimController.dispose();
+    _missionStartTimer?.cancel();
     _particleTimer?.cancel();
     super.dispose();
   }
 
   void _recordEvent(GameplayEventType type, String objectId, Offset pos) {
-    final offset = DateTime.now().difference(_startTime).inMilliseconds.toDouble();
-    _firstActionTimeMs ??= offset;
+    final offset = DateTime.now()
+        .difference(_startTime)
+        .inMilliseconds
+        .toDouble();
+    if (type == GameplayEventType.tapCorrect ||
+        type == GameplayEventType.tapWrong ||
+        type == GameplayEventType.tapDistractor) {
+      _firstActionTimeMs ??= offset;
+    }
 
     setState(() {
-      _events.add(GameplayEvent(
-        type: type,
-        objectId: objectId,
-        timeOffsetMs: offset,
-        x: pos.dx,
-        y: pos.dy,
-      ));
+      _events.add(
+        GameplayEvent(
+          type: type,
+          objectId: objectId,
+          timeOffsetMs: offset,
+          x: pos.dx,
+          y: pos.dy,
+        ),
+      );
 
       if (type == GameplayEventType.tapWrong) {
         _wrongClicks++;
@@ -200,15 +237,19 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       for (int i = 0; i < 30; i++) {
         double angle = random.nextDouble() * 2 * math.pi;
         double speed = 1.0 + random.nextDouble() * 5.0;
-        _particles.add(LevelParticle(
-          x: origin.dx,
-          y: origin.dy,
-          vx: math.cos(angle) * speed,
-          vy: math.sin(angle) * speed - 2.0, // slight upward gravity
-          color: random.nextBool() ? AppColors.secondary : AppColors.accentYellow,
-          radius: 2.0 + random.nextDouble() * 4.0,
-          opacity: 1.0,
-        ));
+        _particles.add(
+          LevelParticle(
+            x: origin.dx,
+            y: origin.dy,
+            vx: math.cos(angle) * speed,
+            vy: math.sin(angle) * speed - 2.0, // slight upward gravity
+            color: random.nextBool()
+                ? AppColors.secondary
+                : AppColors.accentYellow,
+            radius: 2.0 + random.nextDouble() * 4.0,
+            opacity: 1.0,
+          ),
+        );
       }
     });
 
@@ -233,10 +274,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
 
     // Switch between specific levels progress:
     if (widget.missionId == 'dark_room') {
-      setState(() => _isLit = true);
+      setState(() {
+        _isLit = true;
+        _isCompleted = true;
+      });
       _lightAnimController.forward().then((_) {
         if (mounted) {
-          setState(() => _isCompleted = true);
           _handleLevelCompleted();
         }
       });
@@ -263,10 +306,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
           _keySelected = true;
         });
       } else if (objectId == 'door' && _keySelected) {
-        setState(() => _doorOpened = true);
+        setState(() {
+          _doorOpened = true;
+          _isCompleted = true;
+        });
         _doorAnimController.forward().then((_) {
           if (mounted) {
-            setState(() => _isCompleted = true);
             _handleLevelCompleted();
           }
         });
@@ -274,7 +319,31 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     }
   }
 
-  void _handleLevelCompleted() {
+  void _handleLampFailure(Offset position) {
+    if (_isCompleted || _isPaused || _resultSubmitted) return;
+
+    _recordEvent(GameplayEventType.tapWrong, 'lamp', position);
+    _timerController.stop();
+
+    final appState = Provider.of<AppState>(context, listen: false);
+    setState(() {
+      _isCompleted = true;
+      _failureNoticeText = AppLocalizations.get(
+        'lamp_failure_message',
+        appState.language,
+      );
+    });
+
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        _handleLevelFailed(completionTimeSeconds: _elapsedSeconds);
+      }
+    });
+  }
+
+  Future<void> _handleLevelCompleted() async {
+    if (_resultSubmitted) return;
+    _resultSubmitted = true;
     _timerController.stop();
 
     // Star calculation rules based on time, hints, and clicks:
@@ -297,10 +366,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       childId: appState.selectedProfile!.id,
       missionId: widget.missionId,
       timestamp: DateTime.now(),
-      completionTimeSeconds: DateTime.now().difference(_startTime).inSeconds.toDouble(),
+      difficultyLevel: _difficulty.difficultyLevel,
+      completionTimeSeconds:
+          DateTime.now().difference(_startTime).inMilliseconds / 1000.0,
       starsEarned: stars,
       gemsEarned: gems,
-      totalClicks: _events.length,
+      totalClicks: _events.where((event) => event.isTap).length,
       wrongClicks: _wrongClicks,
       distractorClicks: _distractorClicks,
       hintsUsed: _hintsUsed,
@@ -309,31 +380,39 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     );
 
     // Save result to store and update AI adaptation
-    appState.submitSession(result);
+    await appState.submitSession(result);
 
     // Proceed to Results screen
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ResultsScreen(session: result),
-          ),
+          MaterialPageRoute(builder: (_) => ResultsScreen(session: result)),
         );
       }
     });
   }
 
-  void _handleLevelFailed() {
+  Future<void> _handleLevelFailed({double? completionTimeSeconds}) async {
+    if (_resultSubmitted) return;
+    _resultSubmitted = true;
+    _timerController.stop();
+
+    if (!_isCompleted) {
+      setState(() => _isCompleted = true);
+    }
+
     final appState = Provider.of<AppState>(context, listen: false);
     final result = SessionResult(
       id: '${widget.missionId}_failed_${DateTime.now().millisecondsSinceEpoch}',
       childId: appState.selectedProfile!.id,
       missionId: widget.missionId,
       timestamp: DateTime.now(),
-      completionTimeSeconds: 40.0,
+      difficultyLevel: _difficulty.difficultyLevel,
+      completionTimeSeconds:
+          completionTimeSeconds ?? _difficulty.timeLimitSeconds.toDouble(),
       starsEarned: 0,
       gemsEarned: 0,
-      totalClicks: _events.length,
+      totalClicks: _events.where((event) => event.isTap).length,
       wrongClicks: _wrongClicks,
       distractorClicks: _distractorClicks,
       hintsUsed: _hintsUsed,
@@ -341,18 +420,17 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       events: _events,
     );
 
-    appState.submitSession(result);
+    await appState.submitSession(result);
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => ResultsScreen(session: result),
-        ),
+        MaterialPageRoute(builder: (_) => ResultsScreen(session: result)),
       );
     }
   }
 
   void _showPauseOverlay() {
+    if (!_interactionReady) return;
     setState(() {
       _isPaused = true;
     });
@@ -380,7 +458,10 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
             children: [
               // Main Level Board Graphic Area
               Positioned.fill(
-                child: _buildActiveLevelLayout(context),
+                child: AbsorbPointer(
+                  absorbing: !_interactionReady,
+                  child: _buildActiveLevelLayout(context),
+                ),
               ),
 
               // Particles must not intercept pointer events (web + mobile)
@@ -409,6 +490,14 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                 child: _buildGoalText(lang),
               ),
 
+              if (!_interactionReady)
+                Positioned(
+                  top: 128,
+                  left: 24,
+                  right: 24,
+                  child: _buildLookFirstCard(lang),
+                ),
+
               // Glowing Hint popups
               if (_hintActive)
                 Positioned(
@@ -418,11 +507,15 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   child: _buildHintCard(lang),
                 ),
 
-              // Custom Game Paused Modal
-              if (_isPaused)
+              if (_failureNoticeText != null)
                 Positioned.fill(
-                  child: _buildPausedOverlay(lang),
+                  child: IgnorePointer(
+                    child: Center(child: _buildFailureNotice(lang)),
+                  ),
                 ),
+
+              // Custom Game Paused Modal
+              if (_isPaused) Positioned.fill(child: _buildPausedOverlay(lang)),
             ],
           ),
         ),
@@ -447,7 +540,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: Icon(Icons.pause_rounded, color: AppColors.textPrimary, size: 28),
+            icon: Icon(
+              Icons.pause_rounded,
+              color: AppColors.textPrimary,
+              size: 28,
+            ),
             onPressed: _showPauseOverlay,
           ),
 
@@ -460,15 +557,19 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   animation: _timerController,
                   builder: (context, child) {
                     double progress = 1.0 - _timerController.value;
-                    Color barColor = progress > 0.4 
-                        ? AppColors.secondary 
-                        : (progress > 0.15 ? AppColors.accentYellow : AppColors.accentRed);
+                    Color barColor = progress > 0.4
+                        ? AppColors.secondary
+                        : (progress > 0.15
+                              ? AppColors.accentYellow
+                              : AppColors.accentRed);
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 12,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
                         valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       ),
                     );
@@ -487,16 +588,24 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   size: 28,
                   color: _hintActive
                       ? AppColors.accentYellow
-                      : AppColors.textMuted.withValues(alpha: 0.5 + (_pulseController.value * 0.3)),
+                      : AppColors.textMuted.withValues(
+                          alpha: 0.5 + (_pulseController.value * 0.3),
+                        ),
                 );
               },
             ),
-            onPressed: () {
-              if (!_hintActive) {
-                _recordEvent(GameplayEventType.hintUsed, 'hint_button', Offset.zero);
-                _triggerAutoHint();
-              }
-            },
+            onPressed: !_interactionReady
+                ? null
+                : () {
+                    if (!_hintActive) {
+                      _recordEvent(
+                        GameplayEventType.hintUsed,
+                        'hint_button',
+                        Offset.zero,
+                      );
+                      _triggerAutoHint();
+                    }
+                  },
           ),
         ],
       ),
@@ -524,6 +633,34 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     );
   }
 
+  Widget _buildLookFirstCard(String lang) {
+    return Center(
+      child: GlassmorphicContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        borderRadius: 16,
+        color: AppColors.accentPurple.withValues(alpha: 0.9),
+        borderColor: Colors.white.withValues(alpha: 0.35),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.visibility_rounded, color: Colors.white),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                AppLocalizations.get('look_first', lang),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHintCard(String lang) {
     return GlassmorphicContainer(
       padding: const EdgeInsets.all(16),
@@ -531,7 +668,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       borderColor: AppColors.accentYellow.withValues(alpha: 0.5),
       child: Row(
         children: [
-          const Icon(Icons.lightbulb_outline, color: AppColors.accentYellow, size: 28),
+          const Icon(
+            Icons.lightbulb_outline,
+            color: AppColors.accentYellow,
+            size: 28,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -552,6 +693,51 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     );
   }
 
+  Widget _buildFailureNotice(String lang) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: GlassmorphicContainer(
+        padding: const EdgeInsets.all(20),
+        borderRadius: 22,
+        color: AppColors.accentRed.withValues(alpha: 0.94),
+        borderColor: Colors.white.withValues(alpha: 0.45),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 34,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.get('failure_title', lang),
+                    style: AppTextStyles.displaySmall(
+                      context,
+                    ).copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _failureNoticeText ?? '',
+                    style: AppTextStyles.bodyMedium(context).copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPausedOverlay(String lang) {
     return Container(
       color: AppColors.textPrimary.withValues(alpha: 0.4),
@@ -567,18 +753,24 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                 style: AppTextStyles.displayMedium(context),
               ),
               const SizedBox(height: 24),
-              
+
               // Resume
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onPressed: _resumeLevel,
                 child: Text(
                   AppLocalizations.get('resume', lang),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -589,12 +781,15 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white30),
                   minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (_) => PuzzleGameScreen(missionId: widget.missionId),
+                      builder: (_) =>
+                          PuzzleGameScreen(missionId: widget.missionId),
                     ),
                   );
                 },
@@ -644,7 +839,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
             behavior: HitTestBehavior.translucent,
             onTap: () {
               if (!_isCompleted && !_isPaused) {
-                _recordEvent(GameplayEventType.tapWrong, 'empty_space', Offset.zero);
+                _recordEvent(
+                  GameplayEventType.tapWrong,
+                  'empty_space',
+                  Offset.zero,
+                );
               }
             },
             child: const SizedBox.expand(),
@@ -653,24 +852,86 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
 
         // Distractors below interactive objects
         if (maxDistractors > 0 && !reduceMotion)
-          Positioned.fill(
-            child: _buildDistractorOverlay(maxDistractors),
-          ),
+          Positioned.fill(child: _buildDistractorOverlay(maxDistractors)),
+
+        // Additional wrong objects are generated from the agent's object-count
+        // decision, so higher difficulty changes the playable scene itself.
+        Positioned.fill(child: _buildExtraWrongObjectOverlay(maxDistractors)),
 
         // Interactive puzzle objects on top — always receive taps first
-        Positioned.fill(
-          child: _buildInteractiveGameplayElements(),
-        ),
+        Positioned.fill(child: _buildInteractiveGameplayElements()),
       ],
+    );
+  }
+
+  Widget _buildExtraWrongObjectOverlay(int distractorCount) {
+    final baseObjectCount = widget.missionId == 'robot_room' ? 3 : 4;
+    final requestedCount =
+        _difficulty.totalObjects - baseObjectCount - distractorCount;
+    final extraCount = requestedCount.clamp(0, 5);
+    if (extraCount == 0) return const SizedBox.shrink();
+
+    const positions = [
+      Offset(0.72, 0.27),
+      Offset(0.34, 0.40),
+      Offset(0.74, 0.57),
+      Offset(0.32, 0.68),
+      Offset(0.53, 0.50),
+    ];
+    const emojis = ['📘', '🍎', '🧸', '🕰️', '🌼'];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: List.generate(extraCount, (index) {
+            final position = positions[index];
+            return Positioned(
+              left: position.dx * constraints.maxWidth - 24,
+              top: position.dy * constraints.maxHeight - 24,
+              child: Semantics(
+                button: true,
+                label: 'Extra object ${index + 1}',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      if (_isCompleted || _isPaused) return;
+                      _recordEvent(
+                        GameplayEventType.tapWrong,
+                        'extra_wrong_$index',
+                        Offset.zero,
+                      );
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Text(
+                        emojis[index],
+                        style: const TextStyle(fontSize: 25),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 
   Widget _buildLevelBackground() {
     if (widget.missionId == 'dark_room') {
-      return DarkRoomScene(
-        lightLevel: _lightAnim.value,
-        lightAnim: _lightAnim,
-      );
+      return DarkRoomScene(lightLevel: _lightAnim.value, lightAnim: _lightAnim);
     } else if (widget.missionId == 'robot_room') {
       return RobotLabScene(
         isPowered: _isPowered,
@@ -700,7 +961,15 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
               Positioned(
                 top: h * 0.06,
                 left: w * 0.5 - 50,
-                child: RoomLamp(isLit: _isLit, glowAnim: _lightAnim),
+                child: Semantics(
+                  button: true,
+                  label: 'Lamp',
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _handleLampFailure(Offset.zero),
+                    child: RoomLamp(isLit: _isLit, glowAnim: _lightAnim),
+                  ),
+                ),
               ),
 
               // Lighter (wrong)
@@ -711,7 +980,8 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   id: 'lighter',
                   emoji: '🔥',
                   label: 'Lighter',
-                  onTap: (pos) => _recordEvent(GameplayEventType.tapWrong, 'lighter', pos),
+                  onTap: (pos) =>
+                      _recordEvent(GameplayEventType.tapWrong, 'lighter', pos),
                 ),
               ),
 
@@ -723,7 +993,8 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   id: 'sun_icon',
                   emoji: '☀️',
                   label: 'Sun',
-                  onTap: (pos) => _recordEvent(GameplayEventType.tapWrong, 'sun_icon', pos),
+                  onTap: (pos) =>
+                      _recordEvent(GameplayEventType.tapWrong, 'sun_icon', pos),
                 ),
               ),
 
@@ -764,7 +1035,9 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   emoji: '🔋',
                   label: 'Battery',
                   isGlowing: !_batterySelected,
-                  glowColor: _batterySelected ? AppColors.accentGreen : AppColors.secondary,
+                  glowColor: _batterySelected
+                      ? AppColors.accentGreen
+                      : AppColors.secondary,
                   onTap: (pos) => _handleCorrectClick('battery', pos),
                 ),
               ),
@@ -781,7 +1054,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                     if (_batterySelected) {
                       _handleCorrectClick('cable', pos);
                     } else {
-                      _recordEvent(GameplayEventType.tapWrong, 'cable_early', pos);
+                      _recordEvent(
+                        GameplayEventType.tapWrong,
+                        'cable_early',
+                        pos,
+                      );
                     }
                   },
                 ),
@@ -793,7 +1070,8 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   id: 'wrench',
                   emoji: '🔧',
                   label: 'Wrench',
-                  onTap: (pos) => _recordEvent(GameplayEventType.tapWrong, 'wrench', pos),
+                  onTap: (pos) =>
+                      _recordEvent(GameplayEventType.tapWrong, 'wrench', pos),
                 ),
               ),
             ],
@@ -823,7 +1101,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                       if (_keySelected) {
                         _handleCorrectClick('door', Offset.zero);
                       } else {
-                        _recordEvent(GameplayEventType.tapWrong, 'door_locked', Offset.zero);
+                        _recordEvent(
+                          GameplayEventType.tapWrong,
+                          'door_locked',
+                          Offset.zero,
+                        );
                       }
                     },
                     child: const SizedBox.expand(),
@@ -866,7 +1148,8 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   id: 'hammer',
                   emoji: '🔨',
                   label: 'Hammer',
-                  onTap: (pos) => _recordEvent(GameplayEventType.tapWrong, 'hammer', pos),
+                  onTap: (pos) =>
+                      _recordEvent(GameplayEventType.tapWrong, 'hammer', pos),
                 ),
               ),
             ],
@@ -923,10 +1206,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         ]
                       : null,
                 ),
-                child: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 36),
-                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 36)),
               );
             },
           ),
@@ -995,7 +1275,8 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
         distWidget = AnimatedBuilder(
           animation: _distractorMotionController,
           builder: (context, child) {
-            double offset = math.sin(_distractorMotionController.value * math.pi) * 35.0;
+            double offset =
+                math.sin(_distractorMotionController.value * math.pi) * 35.0;
             return Transform.translate(
               offset: Offset(0, -offset),
               child: child,
@@ -1013,9 +1294,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.3 * _pulseController.value),
+                    color: AppColors.secondary.withValues(
+                      alpha: 0.3 * _pulseController.value,
+                    ),
                     blurRadius: 15,
-                  )
+                  ),
                 ],
               ),
               child: child,

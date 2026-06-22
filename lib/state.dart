@@ -64,6 +64,15 @@ class AppState extends ChangeNotifier {
   String _lastFeedbackMessage = "Let's explore your first puzzle room!";
   String get lastFeedbackMessage => _lastFeedbackMessage;
 
+  BehavioralProfile _behavioralProfile = BehavioralProfile.empty('');
+  BehavioralProfile get behavioralProfile => _behavioralProfile;
+
+  String _lastDecisionType = 'balanced_puzzle';
+  String get lastDecisionType => _lastDecisionType;
+
+  String _lastDecisionReason = 'The first quest begins with balanced support.';
+  String get lastDecisionReason => _lastDecisionReason;
+
   AIAgentService _aiAgent = LocalAIEngine.instance;
   AIAgentService get aiAgent => _aiAgent;
 
@@ -85,12 +94,18 @@ class AppState extends ChangeNotifier {
     // Load Settings
     _language = _settingsBox.get('language', defaultValue: 'en');
     _reduceMotion = _settingsBox.get('reduceMotion', defaultValue: false);
-    _reduceDistractors = _settingsBox.get('reduceDistractors', defaultValue: false);
+    _reduceDistractors = _settingsBox.get(
+      'reduceDistractors',
+      defaultValue: false,
+    );
     _colorblindMode = _settingsBox.get('colorblindMode', defaultValue: false);
     _largerText = _settingsBox.get('largerText', defaultValue: false);
     _musicVolume = _settingsBox.get('musicVolume', defaultValue: 0.5);
     _sfxVolume = _settingsBox.get('sfxVolume', defaultValue: 0.8);
-    _voiceInstructions = _settingsBox.get('voiceInstructions', defaultValue: true);
+    _voiceInstructions = _settingsBox.get(
+      'voiceInstructions',
+      defaultValue: true,
+    );
     _parentPin = _settingsBox.get('parentPin');
 
     // Load Profiles
@@ -122,6 +137,9 @@ class AppState extends ChangeNotifier {
   Future<void> setLanguage(String lang) async {
     _language = lang;
     await _settingsBox.put('language', lang);
+    if (_selectedProfile != null) {
+      _loadAIParamsForCurrentChild();
+    }
     notifyListeners();
   }
 
@@ -181,7 +199,7 @@ class AppState extends ChangeNotifier {
 
     await _profilesBox.put(id, profile.toMap());
     _loadProfiles();
-    
+
     if (_selectedProfile == null) {
       await selectProfile(id);
     } else {
@@ -212,6 +230,11 @@ class AppState extends ChangeNotifier {
       }
     }
 
+    final perProfileSettingKeys = _settingsBox.keys
+        .where((key) => key.toString().contains(id))
+        .toList();
+    await _settingsBox.deleteAll(perProfileSettingKeys);
+
     _loadProfiles();
     if (_selectedProfile?.id == id) {
       _selectedProfile = null;
@@ -233,22 +256,57 @@ class AppState extends ChangeNotifier {
 
   void _loadAIParamsForCurrentChild() {
     if (_selectedProfile == null) return;
-    
+
     // Read last stored adaptation or set default
     Map? diffMap = _settingsBox.get('difficulty_${_selectedProfile!.id}');
     if (diffMap != null) {
-      _currentDifficulty = DifficultyParams.fromMap(Map<String, dynamic>.from(diffMap));
+      _currentDifficulty = DifficultyParams.fromMap(
+        Map<String, dynamic>.from(diffMap),
+      );
     } else {
       _currentDifficulty = const DifficultyParams();
     }
 
-    _recommendedMissionId = _settingsBox.get('recommended_mission_${_selectedProfile!.id}', defaultValue: 'dark_room');
+    _recommendedMissionId = _settingsBox.get(
+      'recommended_mission_${_selectedProfile!.id}',
+      defaultValue: 'dark_room',
+    );
+
+    final rawProfile = _settingsBox.get(
+      'behavioral_profile_${_selectedProfile!.id}',
+    );
+    _behavioralProfile = rawProfile is Map
+        ? BehavioralProfile.fromMap(Map<String, dynamic>.from(rawProfile))
+        : _aiAgent.buildBehavioralProfile(
+            _selectedProfile!.id,
+            getSessionHistoryForCurrentChild(),
+          );
+
+    _lastDecisionType = _settingsBox.get(
+      'last_decision_type_${_selectedProfile!.id}',
+      defaultValue: 'balanced_puzzle',
+    );
 
     // Load last support message
-    String langCode = _language == 'fr' ? 'Fr' : (_language == 'ar' ? 'Ar' : 'En');
-    _lastFeedbackMessage = _settingsBox.get('last_feedback_${_selectedProfile!.id}_$langCode', 
-      defaultValue: _language == 'fr' ? "Explorons ton premier puzzle !" : 
-                   (_language == 'ar' ? "لنستكشف أول غرفة ألغاز لك!" : "Let's explore your first puzzle room!"));
+    String langCode = _language == 'fr'
+        ? 'Fr'
+        : (_language == 'ar' ? 'Ar' : 'En');
+    _lastFeedbackMessage = _settingsBox.get(
+      'last_feedback_${_selectedProfile!.id}_$langCode',
+      defaultValue: _language == 'fr'
+          ? "Explorons ton premier puzzle !"
+          : (_language == 'ar'
+                ? "لنستكشف أول غرفة ألغاز لك!"
+                : "Let's explore your first puzzle room!"),
+    );
+    _lastDecisionReason = _settingsBox.get(
+      'last_reason_${_selectedProfile!.id}_$langCode',
+      defaultValue: _language == 'fr'
+          ? 'La première mission commence avec un soutien équilibré.'
+          : (_language == 'ar'
+                ? 'تبدأ المهمة الأولى بدعم متوازن.'
+                : 'The first quest begins with balanced support.'),
+    );
   }
 
   // Record Level Finished & Trigger AI Adaptation
@@ -262,7 +320,9 @@ class AppState extends ChangeNotifier {
     int updatedStars = _selectedProfile!.stars + session.starsEarned;
     int updatedGems = _selectedProfile!.gems + session.gemsEarned;
 
-    Map<String, int> updatedMissions = Map<String, int>.from(_selectedProfile!.completedMissions);
+    Map<String, int> updatedMissions = Map<String, int>.from(
+      _selectedProfile!.completedMissions,
+    );
     int currentBestStars = updatedMissions[session.missionId] ?? 0;
     if (session.starsEarned > currentBestStars) {
       updatedMissions[session.missionId] = session.starsEarned;
@@ -276,7 +336,7 @@ class AppState extends ChangeNotifier {
 
     // Save updated profile
     await _profilesBox.put(updatedProfile.id, updatedProfile.toMap());
-    
+
     // Update active variable
     _selectedProfile = updatedProfile;
     _loadProfiles(); // reload lists
@@ -291,29 +351,67 @@ class AppState extends ChangeNotifier {
     );
 
     // 4. Save difficulty & recommended parameters
-    _currentDifficulty = _reduceDistractors 
-        ? DifficultyParams(
+    _currentDifficulty = _reduceDistractors
+        ? adaptation.nextDifficulty.copyWith(
             maxDistractors: min(1, adaptation.nextDifficulty.maxDistractors),
             distractorIntensity: 0.1,
-            totalObjects: adaptation.nextDifficulty.totalObjects,
-            hintDelaySeconds: adaptation.nextDifficulty.hintDelaySeconds,
-            showTimerBar: adaptation.nextDifficulty.showTimerBar,
-            complexityLevel: adaptation.nextDifficulty.complexityLevel,
           )
         : adaptation.nextDifficulty;
-        
-    _recommendedMissionId = adaptation.recommendedMissionId;
 
-    await _settingsBox.put('difficulty_${_selectedProfile!.id}', _currentDifficulty.toMap());
-    await _settingsBox.put('recommended_mission_${_selectedProfile!.id}', _recommendedMissionId);
+    _recommendedMissionId = adaptation.recommendedMissionId;
+    _behavioralProfile = adaptation.updatedProfile;
+    _lastDecisionType = adaptation.missionType;
+
+    await _settingsBox.put(
+      'difficulty_${_selectedProfile!.id}',
+      _currentDifficulty.toMap(),
+    );
+    await _settingsBox.put(
+      'recommended_mission_${_selectedProfile!.id}',
+      _recommendedMissionId,
+    );
+    await _settingsBox.put(
+      'behavioral_profile_${_selectedProfile!.id}',
+      _behavioralProfile.toMap(),
+    );
+    await _settingsBox.put(
+      'last_decision_type_${_selectedProfile!.id}',
+      _lastDecisionType,
+    );
 
     // Save feedback messages in all languages
-    await _settingsBox.put('last_feedback_${_selectedProfile!.id}_En', adaptation.supportMessageEn);
-    await _settingsBox.put('last_feedback_${_selectedProfile!.id}_Fr', adaptation.supportMessageFr);
-    await _settingsBox.put('last_feedback_${_selectedProfile!.id}_Ar', adaptation.supportMessageAr);
+    await _settingsBox.put(
+      'last_feedback_${_selectedProfile!.id}_En',
+      adaptation.supportMessageEn,
+    );
+    await _settingsBox.put(
+      'last_feedback_${_selectedProfile!.id}_Fr',
+      adaptation.supportMessageFr,
+    );
+    await _settingsBox.put(
+      'last_feedback_${_selectedProfile!.id}_Ar',
+      adaptation.supportMessageAr,
+    );
+    await _settingsBox.put(
+      'last_reason_${_selectedProfile!.id}_En',
+      adaptation.reasonEn,
+    );
+    await _settingsBox.put(
+      'last_reason_${_selectedProfile!.id}_Fr',
+      adaptation.reasonFr,
+    );
+    await _settingsBox.put(
+      'last_reason_${_selectedProfile!.id}_Ar',
+      adaptation.reasonAr,
+    );
 
-    String langCode = _language == 'fr' ? 'Fr' : (_language == 'ar' ? 'Ar' : 'En');
-    _lastFeedbackMessage = _settingsBox.get('last_feedback_${_selectedProfile!.id}_$langCode');
+    String langCode = _language == 'fr'
+        ? 'Fr'
+        : (_language == 'ar' ? 'Ar' : 'En');
+    _lastFeedbackMessage = _settingsBox.get(
+      'last_feedback_${_selectedProfile!.id}_$langCode',
+    );
+    _lastDecisionReason = adaptation.reasonForLanguage(_language);
 
     notifyListeners();
   }
@@ -381,6 +479,10 @@ class AppState extends ChangeNotifier {
     _parentPin = null;
     _currentDifficulty = const DifficultyParams();
     _recommendedMissionId = 'dark_room';
+    _behavioralProfile = BehavioralProfile.empty('');
+    _lastDecisionType = 'balanced_puzzle';
+    _lastDecisionReason = 'The first quest begins with balanced support.';
+    _lastFeedbackMessage = "Let's explore your first puzzle room!";
 
     notifyListeners();
   }

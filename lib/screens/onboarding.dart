@@ -87,8 +87,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final lang = appState.language;
-    final isRtl = AppLocalizations.getDirection(lang) == TextDirection.rtl;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
